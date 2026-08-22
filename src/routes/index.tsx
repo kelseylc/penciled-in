@@ -14,8 +14,10 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Pick a template, share one link, get a decision. No accounts for responders, quorum not unanimity.",
+          "Pick a template, share one link, get a decision. Takes 30 seconds — no signup.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Index,

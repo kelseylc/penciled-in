@@ -10,6 +10,9 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { getResults, lockOneOff, lockCadence } from "@/lib/results.functions";
+import { nudgeResponders } from "@/lib/nudge.functions";
+import { saveGroupFromProject } from "@/lib/groups.functions";
+import { Input } from "@/components/ui/input";
 import {
   enumerateCadences,
   listNames,
@@ -70,6 +73,39 @@ function ResultsPage() {
     queryKey: ["results", slug],
     queryFn: () => fetchResults({ data: { slug } }),
     enabled: !!session,
+  });
+
+  const nudgeFn = useServerFn(nudgeResponders);
+  const saveGroupFn = useServerFn(saveGroupFromProject);
+  const [groupName, setGroupName] = useState("");
+  const [savedGroupSlug, setSavedGroupSlug] = useState<string | null>(null);
+  const [groupPromptOpen, setGroupPromptOpen] = useState(true);
+
+  const saveGroupM = useMutation({
+    mutationFn: () => saveGroupFn({ data: { slug, name: groupName.trim() } }),
+    onSuccess: (res) => {
+      setSavedGroupSlug(res.slug);
+      toast.success("Saved — that crew is one tap away next time");
+      qc.invalidateQueries({ queryKey: ["results", slug] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const nudgeM = useMutation({
+    mutationFn: () => nudgeFn({ data: { slug, origin: window.location.origin } }),
+    onSuccess: async (res) => {
+      if (res.emailed > 0) {
+        toast.success(`Nudged ${res.emailed} by email`);
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(res.message);
+        toast.success("Nudge copied — paste it in the chat");
+      } catch {
+        toast.error("Couldn't copy — long-press to select instead.");
+      }
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const lockSlotFn = useServerFn(lockOneOff);
@@ -143,19 +179,6 @@ function ResultsPage() {
   const total = data.participants.length;
   const locked = data.project.status === "locked";
 
-  function nudge() {
-    const link = `${window.location.origin}/p/${slug}`;
-    const text = `Still waiting on ${listNames(waiting)} for ${data!.project.name} — 30 seconds, no signup: ${link}`;
-    if (navigator.share) {
-      navigator.share({ text }).catch(() => void 0);
-      return;
-    }
-    navigator.clipboard
-      .writeText(text)
-      .then(() => toast.success("Nudge copied"))
-      .catch(() => toast.error("Couldn't copy"));
-  }
-
   return (
     <Shell>
       <header className="mb-5">
@@ -167,8 +190,59 @@ function ResultsPage() {
       </header>
 
       {locked && (
-        <div className="mb-4 flex items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 p-3 text-sm">
-          <Check className="h-4 w-4 shrink-0" /> This plan is locked in.
+        <div className="mb-4 rounded-2xl border border-primary/40 bg-primary/10 p-4 text-sm">
+          <p className="flex items-center gap-2 font-semibold">
+            <Check className="h-4 w-4 shrink-0" /> This plan is locked in.
+          </p>
+          <Link
+            to="/d/$slug"
+            params={{ slug }}
+            className="mt-3 inline-flex h-12 items-center justify-center rounded-xl bg-primary px-4 font-semibold text-primary-foreground"
+          >
+            Open the share-ready page
+          </Link>
+        </div>
+      )}
+
+      {locked && !data.project.group_id && !savedGroupSlug && groupPromptOpen && (
+        <div className="mb-5 rounded-2xl border border-border bg-card p-4">
+          <p className="text-sm font-semibold">
+            Save these {total} people as a group?
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Next time you can skip straight past the awkward name-typing part.
+          </p>
+          <Input
+            className="mt-3 h-12 rounded-xl text-base"
+            placeholder="Sunday crew"
+            value={groupName}
+            onChange={(e) => setGroupName(e.target.value)}
+          />
+          <div className="mt-3 flex gap-2">
+            <Button
+              className="h-12 flex-1"
+              disabled={!groupName.trim() || saveGroupM.isPending}
+              onClick={() => saveGroupM.mutate()}
+            >
+              Save group
+            </Button>
+            <Button
+              variant="secondary"
+              className="h-12"
+              onClick={() => setGroupPromptOpen(false)}
+            >
+              Not now
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {savedGroupSlug && (
+        <div className="mb-5 rounded-2xl border border-accent bg-accent/40 p-4 text-sm">
+          Group saved. Its permanent link:{" "}
+          <Link to="/g/$slug" params={{ slug: savedGroupSlug }} className="underline">
+            /g/{savedGroupSlug}
+          </Link>
         </div>
       )}
 
@@ -178,7 +252,7 @@ function ResultsPage() {
             <span className="text-muted-foreground">Waiting on: </span>
             {waiting.join(", ")}
           </p>
-          <Button variant="secondary" className="h-11 shrink-0" onClick={nudge}>
+          <Button variant="secondary" className="h-11 shrink-0" onClick={() => nudgeM.mutate()}>
             Nudge
           </Button>
         </div>

@@ -13,10 +13,13 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as NewRouteImport } from './routes/new'
+import { Route as DSlugRouteImport } from './routes/d.$slug'
+import { Route as GSlugRouteImport } from './routes/g.$slug'
 import { Route as OIdRouteImport } from './routes/o.$id'
 import { Route as PSlugRouteImport } from './routes/p.$slug'
 import { Route as ResultsSlugRouteImport } from './routes/results.$slug'
 import { Route as ShareSlugRouteImport } from './routes/share.$slug'
+import { Route as ApiPublicHooksNudgeDeadlinesRouteImport } from './routes/api/public/hooks/nudge-deadlines'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -36,6 +39,16 @@ const HomeRoute = HomeRouteImport.update({
 const NewRoute = NewRouteImport.update({
   id: '/new',
   path: '/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DSlugRoute = DSlugRouteImport.update({
+  id: '/d/$slug',
+  path: '/d/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GSlugRoute = GSlugRouteImport.update({
+  id: '/g/$slug',
+  path: '/g/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OIdRoute = OIdRouteImport.update({
@@ -58,26 +71,38 @@ const ShareSlugRoute = ShareSlugRouteImport.update({
   path: '/share/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksNudgeDeadlinesRoute =
+  ApiPublicHooksNudgeDeadlinesRouteImport.update({
+    id: '/api/public/hooks/nudge-deadlines',
+    path: '/api/public/hooks/nudge-deadlines',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/home': typeof HomeRoute
   '/new': typeof NewRoute
+  '/d/$slug': typeof DSlugRoute
+  '/g/$slug': typeof GSlugRoute
   '/o/$id': typeof OIdRoute
   '/p/$slug': typeof PSlugRoute
   '/results/$slug': typeof ResultsSlugRoute
   '/share/$slug': typeof ShareSlugRoute
+  '/api/public/hooks/nudge-deadlines': typeof ApiPublicHooksNudgeDeadlinesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/home': typeof HomeRoute
   '/new': typeof NewRoute
+  '/d/$slug': typeof DSlugRoute
+  '/g/$slug': typeof GSlugRoute
   '/o/$id': typeof OIdRoute
   '/p/$slug': typeof PSlugRoute
   '/results/$slug': typeof ResultsSlugRoute
   '/share/$slug': typeof ShareSlugRoute
+  '/api/public/hooks/nudge-deadlines': typeof ApiPublicHooksNudgeDeadlinesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -85,10 +110,13 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/home': typeof HomeRoute
   '/new': typeof NewRoute
+  '/d/$slug': typeof DSlugRoute
+  '/g/$slug': typeof GSlugRoute
   '/o/$id': typeof OIdRoute
   '/p/$slug': typeof PSlugRoute
   '/results/$slug': typeof ResultsSlugRoute
   '/share/$slug': typeof ShareSlugRoute
+  '/api/public/hooks/nudge-deadlines': typeof ApiPublicHooksNudgeDeadlinesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -97,30 +125,39 @@ export interface FileRouteTypes {
     | '/auth'
     | '/home'
     | '/new'
+    | '/d/$slug'
+    | '/g/$slug'
     | '/o/$id'
     | '/p/$slug'
     | '/results/$slug'
     | '/share/$slug'
+    | '/api/public/hooks/nudge-deadlines'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
     | '/home'
     | '/new'
+    | '/d/$slug'
+    | '/g/$slug'
     | '/o/$id'
     | '/p/$slug'
     | '/results/$slug'
     | '/share/$slug'
+    | '/api/public/hooks/nudge-deadlines'
   id:
     | '__root__'
     | '/'
     | '/auth'
     | '/home'
     | '/new'
+    | '/d/$slug'
+    | '/g/$slug'
     | '/o/$id'
     | '/p/$slug'
     | '/results/$slug'
     | '/share/$slug'
+    | '/api/public/hooks/nudge-deadlines'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -128,10 +165,13 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   HomeRoute: typeof HomeRoute
   NewRoute: typeof NewRoute
+  DSlugRoute: typeof DSlugRoute
+  GSlugRoute: typeof GSlugRoute
   OIdRoute: typeof OIdRoute
   PSlugRoute: typeof PSlugRoute
   ResultsSlugRoute: typeof ResultsSlugRoute
   ShareSlugRoute: typeof ShareSlugRoute
+  ApiPublicHooksNudgeDeadlinesRoute: typeof ApiPublicHooksNudgeDeadlinesRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -164,6 +204,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/d/$slug': {
+      id: '/d/$slug'
+      path: '/d/$slug'
+      fullPath: '/d/$slug'
+      preLoaderRoute: typeof DSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/g/$slug': {
+      id: '/g/$slug'
+      path: '/g/$slug'
+      fullPath: '/g/$slug'
+      preLoaderRoute: typeof GSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/o/$id': {
       id: '/o/$id'
       path: '/o/$id'
@@ -192,6 +246,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShareSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/nudge-deadlines': {
+      id: '/api/public/hooks/nudge-deadlines'
+      path: '/api/public/hooks/nudge-deadlines'
+      fullPath: '/api/public/hooks/nudge-deadlines'
+      preLoaderRoute: typeof ApiPublicHooksNudgeDeadlinesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -200,10 +261,13 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   HomeRoute: HomeRoute,
   NewRoute: NewRoute,
+  DSlugRoute: DSlugRoute,
+  GSlugRoute: GSlugRoute,
   OIdRoute: OIdRoute,
   PSlugRoute: PSlugRoute,
   ResultsSlugRoute: ResultsSlugRoute,
   ShareSlugRoute: ShareSlugRoute,
+  ApiPublicHooksNudgeDeadlinesRoute: ApiPublicHooksNudgeDeadlinesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -33,7 +33,14 @@ export const Route = createFileRoute("/p/$slug")({
       { property: "og:title", content: "Can you make it? — Adulting is Hard" },
       {
         property: "og:description",
-        content: "Tap the times that work. 30 seconds, no signup.",
+        content: "Tap the times that work. Takes 30 seconds — no signup.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Can you make it? — Adulting is Hard" },
+      {
+        name: "twitter:description",
+        content: "Tap the times that work. Takes 30 seconds — no signup.",
       },
     ],
   }),
@@ -155,6 +162,13 @@ function RespondPage() {
     }
     return [...map.values()];
   }, [bundle, timezone]);
+
+  // Saved availability older than 90 days probably isn't true anymore.
+  const staleDefaults = useMemo(() => {
+    const updated = bundle?.me?.defaults?.updated_at;
+    if (!updated) return false;
+    return Date.now() - new Date(updated).getTime() > 90 * 24 * 3600_000;
+  }, [bundle?.me?.defaults?.updated_at]);
 
   const respondedCount = bundle?.participants.filter((p) => p.responded).length ?? 0;
   const totalCount = bundle?.participants.length ?? 0;
@@ -333,7 +347,9 @@ function RespondPage() {
         {prefilled && bannerOpen && (
           <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 rounded-2xl bg-accent p-4 text-accent-foreground">
             <p className="min-w-0 text-sm">
-              Pre-filled from your usual availability — tap anything to change it.
+              {staleDefaults
+                ? "This is from a while ago — still right? Tap anything to change it."
+                : "Pre-filled from your usual availability — tap anything to change it."}
             </p>
             <button
               type="button"
