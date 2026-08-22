@@ -1,3 +1,4 @@
+import { AppBar } from "@/components/AppBar";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check, Copy, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
