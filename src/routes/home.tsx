@@ -1,3 +1,4 @@
+import { AppBar } from "@/components/AppBar";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -115,9 +116,23 @@ function HomePage() {
       </header>
 
       {byProject.size === 0 && (
-        <p className="text-sm text-muted-foreground">
-          No scheduled sessions yet. Lock in a plan and they&apos;ll show up here.
-        </p>
+        <div>
+          <p className="text-sm text-muted-foreground">
+            No scheduled sessions yet. Lock in a plan and they&apos;ll show up here.
+          </p>
+          <Link
+            to="/new"
+            className="mt-4 flex h-14 w-full items-center justify-center rounded-2xl bg-primary text-base font-bold text-primary-foreground"
+          >
+            Start scheduling
+          </Link>
+          <Link
+            to="/"
+            className="mt-3 flex min-h-11 w-full items-center justify-center rounded-2xl border border-border text-sm font-semibold"
+          >
+            Back to home
+          </Link>
+        </div>
       )}
 
       <div className="space-y-8">
@@ -276,5 +291,10 @@ function OccurrenceCard({
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
-  return <main className="mx-auto max-w-lg px-4 py-6 pb-24">{children}</main>;
+  return (
+    <main className="mx-auto max-w-lg px-4 py-6 pb-24">
+      <AppBar />
+      {children}
+    </main>
+  );
 }

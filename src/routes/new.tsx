@@ -1,3 +1,4 @@
+import { AppBar } from "@/components/AppBar";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { addDays, format } from "date-fns";
@@ -200,6 +201,7 @@ function NewProject() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-32 pt-6">
+      <AppBar back={false} />
       <header className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
         <button
           type="button"

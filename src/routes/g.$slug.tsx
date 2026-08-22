@@ -1,3 +1,4 @@
+import { AppBar } from "@/components/AppBar";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
@@ -53,6 +54,7 @@ function GroupPageRoute() {
   if (query.error || !data)
     return (
       <main className="mx-auto w-full max-w-md px-5 py-8">
+        <AppBar />
         {(query.error as Error)?.message ?? "Couldn't load this group."}
       </main>
     );
@@ -66,6 +68,7 @@ function GroupPageRoute() {
 
   return (
     <main className="mx-auto w-full max-w-md px-5 py-8 text-base">
+      <AppBar />
       <h1 className="text-2xl font-bold tracking-tight">{data.group.name}</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         {data.members.map((m) => m.display_name).join(", ") || "No one saved yet"}
