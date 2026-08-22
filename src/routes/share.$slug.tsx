@@ -73,6 +73,7 @@ function SharePage() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-10 pt-10">
+      <AppBar />
       <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
         Ready to send
       </p>
