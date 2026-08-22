@@ -68,7 +68,7 @@ function OccurrencePage() {
   const rsvpFn = useServerFn(submitOccurrenceRsvp);
 
   const query = useQuery({
-    queryKey: ["occurrence", id],
+    queryKey: ["occurrence", id, token ?? "", claimedName ?? ""],
     queryFn: () => fetchBundle({ data: { occurrenceId: id, token, name: claimedName } }),
     placeholderData: (prev) => prev,
   });
