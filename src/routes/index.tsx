@@ -56,6 +56,12 @@ function Index() {
           Start a plan
         </Link>
         <Link
+          to="/home"
+          className="mt-3 flex min-h-11 w-full items-center justify-center rounded-2xl border border-border text-sm font-semibold"
+        >
+          Your upcoming sessions
+        </Link>
+        <Link
           to="/auth"
           className="mt-3 flex min-h-11 w-full items-center justify-center text-sm text-muted-foreground underline underline-offset-4"
         >
