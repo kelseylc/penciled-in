@@ -68,7 +68,7 @@ export const getLockedPlan = createServerFn({ method: "POST" })
         .order("scheduled_start_utc"),
       supabaseAdmin
         .from("participants")
-        .select("id, display_name, is_required")
+        .select("id, display_name, is_required, timezone")
         .eq("project_id", project.id)
         .order("display_name"),
     ]);
