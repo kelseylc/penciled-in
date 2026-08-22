@@ -1,3 +1,4 @@
+import { AppBar } from "@/components/AppBar";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -276,5 +277,10 @@ function OccurrenceCard({
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
-  return <main className="mx-auto max-w-lg px-4 py-6 pb-24">{children}</main>;
+  return (
+    <main className="mx-auto max-w-lg px-4 py-6 pb-24">
+      <AppBar />
+      {children}
+    </main>
+  );
 }
