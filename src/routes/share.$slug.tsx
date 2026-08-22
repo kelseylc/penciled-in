@@ -116,8 +116,16 @@ function SharePage() {
       </div>
 
       <Link
+        to="/results/$slug"
+        params={{ slug }}
+        className="mt-10 flex min-h-12 items-center justify-center rounded-2xl border-2 border-border text-sm font-bold"
+      >
+        See results
+      </Link>
+
+      <Link
         to="/new"
-        className="mt-auto flex min-h-11 items-center justify-center pt-10 text-sm text-muted-foreground underline underline-offset-4"
+        className="mt-auto flex min-h-11 items-center justify-center pt-8 text-sm text-muted-foreground underline underline-offset-4"
       >
         Start another plan
       </Link>
