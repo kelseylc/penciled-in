@@ -83,10 +83,10 @@ export const getRespondBundle = createServerFn({ method: "POST" })
           .select("candidate_slot_id, state")
           .eq("participant_id", participant.id);
 
-        let defaults: RespondBundle["me"] extends null ? never : null | {
+        let defaults: {
           weekly_pattern: Record<string, string[]>;
           blackout_dates: string[];
-        } = null;
+        } | null = null;
 
         if (participant.profile_id && project.group_id) {
           const { data: member } = await supabaseAdmin
