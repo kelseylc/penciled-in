@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/integrations/supabase/types";
-import { createRepollProject, evaluateOccurrence } from "@/lib/occurrences.server";
+import { createRepollProject } from "@/lib/occurrences.server";
 import type { OrganizerOccurrence } from "@/lib/occurrences.functions";
 
 type SB = SupabaseClient<Database>;
@@ -128,6 +128,5 @@ export async function runOccurrenceAction(
     .update({ status: "confirmed" })
     .eq("id", occurrenceId);
   if (error) throw new Error(error.message);
-  await evaluateOccurrence(occurrenceId).catch(() => void 0);
   return { ok: true, repollSlug: null };
 }
