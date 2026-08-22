@@ -34,7 +34,11 @@ export interface RespondBundle {
     timezone: string | null;
     responded: boolean;
     responses: { candidate_slot_id: string; state: "yes" | "maybe" | "no" }[];
-    defaults: { weekly_pattern: Record<string, string[]>; blackout_dates: string[] } | null;
+    defaults: {
+      weekly_pattern: Record<string, string[]>;
+      blackout_dates: string[];
+      updated_at: string;
+    } | null;
   } | null;
 }
 
@@ -86,6 +90,7 @@ export const getRespondBundle = createServerFn({ method: "POST" })
         let defaults: {
           weekly_pattern: Record<string, string[]>;
           blackout_dates: string[];
+          updated_at: string;
         } | null = null;
 
         if (participant.profile_id && project.group_id) {
@@ -98,13 +103,14 @@ export const getRespondBundle = createServerFn({ method: "POST" })
           if (member) {
             const { data: da } = await supabaseAdmin
               .from("default_availability")
-              .select("weekly_pattern, blackout_dates")
+              .select("weekly_pattern, blackout_dates, updated_at")
               .eq("group_member_id", member.id)
               .maybeSingle();
             if (da) {
               defaults = {
                 weekly_pattern: (da.weekly_pattern ?? {}) as Record<string, string[]>,
                 blackout_dates: da.blackout_dates ?? [],
+                updated_at: da.updated_at,
               };
             }
           }
