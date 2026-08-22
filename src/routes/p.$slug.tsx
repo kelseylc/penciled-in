@@ -98,6 +98,7 @@ function RespondPage() {
     queryKey: ["respond", slug, token],
     queryFn: () => fetchBundle({ data: { slug, token } }),
     enabled: tokenReady,
+    placeholderData: (prev) => prev,
   });
 
   const bundle = bundleQuery.data;
@@ -230,7 +231,7 @@ function RespondPage() {
     }
   }
 
-  if (bundleQuery.isLoading || !tokenReady) {
+  if (!tokenReady || (bundleQuery.isLoading && !bundle)) {
     return (
       <main className="mx-auto flex min-h-dvh w-full max-w-md items-center justify-center px-5">
         <p className="text-sm text-muted-foreground">Loading…</p>
