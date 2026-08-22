@@ -44,7 +44,7 @@ function SharePage() {
       .then(({ data }) => setProjectName(data?.name ?? ""));
   }, [slug, session, loading]);
 
-  const link = origin ? `${origin}/r/${slug}` : `/r/${slug}`;
+  const link = origin ? `${origin}/p/${slug}` : `/p/${slug}`;
   const message = `Trying to lock in ${projectName || "our plan"} — takes 30 seconds, no signup: ${link}`;
 
   async function copy(text: string, which: "link" | "message") {
