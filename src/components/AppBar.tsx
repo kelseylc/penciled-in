@@ -23,7 +23,7 @@ export function AppBar({ back = true, title }: Props) {
   const { session } = useAuth();
 
   return (
-    <div className="sticky top-0 z-40 -mx-5 mb-4 flex items-center gap-2 border-b border-border/60 bg-background/90 px-3 py-2 backdrop-blur">
+    <div className="sticky top-0 z-40 mb-4 flex items-center gap-2 border-b border-border/60 bg-background/90 py-2 backdrop-blur">
       {back && (
         <button
           type="button"
