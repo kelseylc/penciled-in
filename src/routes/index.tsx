@@ -55,7 +55,7 @@ function Index() {
           to="/new"
           className="flex h-14 w-full items-center justify-center rounded-2xl bg-primary text-base font-bold text-primary-foreground"
         >
-          Start a plan
+          Start scheduling
         </Link>
         <Link
           to="/home"
