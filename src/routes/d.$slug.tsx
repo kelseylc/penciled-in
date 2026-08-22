@@ -256,6 +256,9 @@ function LockedPage() {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="mx-auto w-full max-w-md px-5 py-8 text-base">{children}</main>
+    <main className="mx-auto w-full max-w-md px-5 py-8 text-base">
+      <AppBar />
+      {children}
+    </main>
   );
 }
