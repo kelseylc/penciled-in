@@ -322,9 +322,10 @@ export function enumerateCadences(
       .filter((p) => availableAtLeastOnce.has(p.id) && (missedBy.get(p.id) ?? 0) > 0)
       .map((p) => p.display_name);
 
-    const label = `${cadencePrefix(cadence)} ${WEEKDAY_NAMES[pair.weekday]}${
-      cadence === "weekly" || cadence === "biweekly" ? "s" : ""
-    }, ${formatTimeRange(pair.startTime, durationMinutes)}`;
+    const label = `${cadencePrefix(cadence)} ${WEEKDAY_NAMES[pair.weekday]}, ${formatTimeRange(
+      pair.startTime,
+      durationMinutes,
+    )}`;
 
     const tradeoff =
       neverAvailable.length > 0

@@ -98,6 +98,6 @@ describe("enumerateCadences", () => {
     expect(top.occurrences).toHaveLength(12);
     expect(top.metCount).toBe(12);
     expect(top.tradeoff).toContain("never with Dana");
-    expect(top.label).toContain("Every Sundays");
+    expect(top.label).toContain("Every Sunday");
   });
 });
