@@ -30,11 +30,11 @@ function Index() {
         Penciled.in
       </p>
       <h1 className="mt-4 text-4xl font-black leading-[1.05] tracking-tight">
-        Lock in a date without the 200-message thread.
+        Adulting is hard, scheduling shouldn't be.
       </h1>
       <p className="mt-4 text-base text-muted-foreground">
-        Pick a template, share one link, get a decision. Your people answer in under 30 seconds and
-        never make an account.
+        Organize an event, share one link to attendees, find the dates that work, lock it in. No
+        account or calendar syncing needed.
       </p>
 
       <ul className="mt-8 space-y-4">
