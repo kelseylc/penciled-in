@@ -26,12 +26,12 @@ import {
 export const Route = createFileRoute("/results/$slug")({
   head: () => ({
     meta: [
-      { title: "Results — Adulting is Hard" },
+      { title: "Results — Penciled.in" },
       {
         name: "description",
         content: "See the best times for your group and lock one in with a single tap.",
       },
-      { property: "og:title", content: "Results — Adulting is Hard" },
+      { property: "og:title", content: "Results — Penciled.in" },
       {
         property: "og:description",
         content: "Ranked times, who's missing by name, and one button to decide.",

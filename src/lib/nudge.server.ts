@@ -37,7 +37,7 @@ async function sendResend(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Adulting is Hard <onboarding@resend.dev>",
+        from: "Penciled.in <onboarding@resend.dev>",
         to: [to],
         subject,
         text,
@@ -93,7 +93,7 @@ export async function nudgeProject(slug: string, origin: string): Promise<NudgeR
         apiKey,
         to,
         `Quick one: ${project.name}`,
-        `Hi ${p.display_name},\n\nWe still need your times for ${project.name}. It takes about 30 seconds and there's no signup:\n\n${personal}\n\n— Adulting is Hard`,
+        `Hi ${p.display_name},\n\nWe still need your times for ${project.name}. It takes about 30 seconds and there's no signup:\n\n${personal}\n\n— Penciled.in`,
       );
       if (ok) emailed += 1;
     }

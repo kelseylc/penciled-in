@@ -4,13 +4,13 @@ import { CalendarCheck, Clock, Users } from "lucide-react";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Adulting is Hard — lock in a date with your group" },
+      { title: "Penciled.in — lock in a date with your group" },
       {
         name: "description",
         content:
           "Group scheduling that ships a decision. Under 30 seconds to respond, no signup for guests, timezone-aware.",
       },
-      { property: "og:title", content: "Adulting is Hard — lock in a date with your group" },
+      { property: "og:title", content: "Penciled.in — lock in a date with your group" },
       {
         property: "og:description",
         content:
@@ -27,7 +27,7 @@ function Index() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 py-10">
       <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
-        Adulting is Hard
+        Penciled.in
       </p>
       <h1 className="mt-4 text-4xl font-black leading-[1.05] tracking-tight">
         Lock in a date without the 200-message thread.

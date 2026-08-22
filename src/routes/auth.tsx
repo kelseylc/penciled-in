@@ -14,13 +14,13 @@ import { claimParticipants } from "@/lib/claim.functions";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Organizer sign in — Adulting is Hard" },
+      { title: "Organizer sign in — Penciled.in" },
       {
         name: "description",
         content:
           "Magic-link sign in for organizers. Responding to a plan never requires an account.",
       },
-      { property: "og:title", content: "Organizer sign in — Adulting is Hard" },
+      { property: "og:title", content: "Organizer sign in — Penciled.in" },
       {
         property: "og:description",
         content: "Organizers sign in here. Everyone else: takes 30 seconds — no signup.",

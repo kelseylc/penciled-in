@@ -62,7 +62,7 @@ export function buildIcs(event: IcsEventInput): string {
   const lines: string[] = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Adulting is Hard//EN",
+    "PRODID:-//Penciled.in//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "BEGIN:VEVENT",
