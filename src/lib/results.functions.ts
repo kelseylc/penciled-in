@@ -148,7 +148,7 @@ export const lockOneOff = createServerFn({ method: "POST" })
     const sb = context.supabase;
     const { data: project } = await sb
       .from("projects")
-      .select("id")
+      .select("id, repoll_for_occurrence_id")
       .eq("slug", data.slug)
       .maybeSingle();
     if (!project) throw new Error("Plan not found");
@@ -166,6 +166,18 @@ export const lockOneOff = createServerFn({ method: "POST" })
       .from("decisions")
       .insert({ project_id: project.id, chosen_slot_id: slot.id });
     if (dErr) throw new Error(dErr.message);
+
+    if (project.repoll_for_occurrence_id) {
+      // Re-poll: move only this one session; the locked cadence stays put.
+      const { applyRepollResult } = await import("@/lib/occurrences.server");
+      await applyRepollResult(project.repoll_for_occurrence_id, slot.start_utc, slot.end_utc);
+      const { error: rErr } = await sb
+        .from("projects")
+        .update({ status: "locked" })
+        .eq("id", project.id);
+      if (rErr) throw new Error(rErr.message);
+      return { ok: true };
+    }
 
     await sb.from("occurrences").delete().eq("project_id", project.id);
     const { error: oErr } = await sb.from("occurrences").insert({

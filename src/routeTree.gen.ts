@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as HomeRouteImport } from './routes/home'
 import { Route as NewRouteImport } from './routes/new'
+import { Route as OIdRouteImport } from './routes/o.$id'
 import { Route as PSlugRouteImport } from './routes/p.$slug'
 import { Route as ResultsSlugRouteImport } from './routes/results.$slug'
 import { Route as ShareSlugRouteImport } from './routes/share.$slug'
@@ -26,9 +28,19 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HomeRoute = HomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NewRoute = NewRouteImport.update({
   id: '/new',
   path: '/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OIdRoute = OIdRouteImport.update({
+  id: '/o/$id',
+  path: '/o/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PSlugRoute = PSlugRouteImport.update({
@@ -50,7 +62,9 @@ const ShareSlugRoute = ShareSlugRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/home': typeof HomeRoute
   '/new': typeof NewRoute
+  '/o/$id': typeof OIdRoute
   '/p/$slug': typeof PSlugRoute
   '/results/$slug': typeof ResultsSlugRoute
   '/share/$slug': typeof ShareSlugRoute
@@ -58,7 +72,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/home': typeof HomeRoute
   '/new': typeof NewRoute
+  '/o/$id': typeof OIdRoute
   '/p/$slug': typeof PSlugRoute
   '/results/$slug': typeof ResultsSlugRoute
   '/share/$slug': typeof ShareSlugRoute
@@ -67,7 +83,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/home': typeof HomeRoute
   '/new': typeof NewRoute
+  '/o/$id': typeof OIdRoute
   '/p/$slug': typeof PSlugRoute
   '/results/$slug': typeof ResultsSlugRoute
   '/share/$slug': typeof ShareSlugRoute
@@ -75,14 +93,31 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/auth' | '/new' | '/p/$slug' | '/results/$slug' | '/share/$slug'
+    | '/'
+    | '/auth'
+    | '/home'
+    | '/new'
+    | '/o/$id'
+    | '/p/$slug'
+    | '/results/$slug'
+    | '/share/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/new' | '/p/$slug' | '/results/$slug' | '/share/$slug'
+  to:
+    | '/'
+    | '/auth'
+    | '/home'
+    | '/new'
+    | '/o/$id'
+    | '/p/$slug'
+    | '/results/$slug'
+    | '/share/$slug'
   id:
     | '__root__'
     | '/'
     | '/auth'
+    | '/home'
     | '/new'
+    | '/o/$id'
     | '/p/$slug'
     | '/results/$slug'
     | '/share/$slug'
@@ -91,7 +126,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
+  HomeRoute: typeof HomeRoute
   NewRoute: typeof NewRoute
+  OIdRoute: typeof OIdRoute
   PSlugRoute: typeof PSlugRoute
   ResultsSlugRoute: typeof ResultsSlugRoute
   ShareSlugRoute: typeof ShareSlugRoute
@@ -113,11 +150,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/new': {
       id: '/new'
       path: '/new'
       fullPath: '/new'
       preLoaderRoute: typeof NewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/o/$id': {
+      id: '/o/$id'
+      path: '/o/$id'
+      fullPath: '/o/$id'
+      preLoaderRoute: typeof OIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/p/$slug': {
@@ -147,7 +198,9 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
+  HomeRoute: HomeRoute,
   NewRoute: NewRoute,
+  OIdRoute: OIdRoute,
   PSlugRoute: PSlugRoute,
   ResultsSlugRoute: ResultsSlugRoute,
   ShareSlugRoute: ShareSlugRoute,
