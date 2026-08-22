@@ -4,8 +4,8 @@ import type { OccurrenceGuestBundle } from "@/lib/occurrences.functions";
 
 async function resolveParticipant(
   projectId: string,
-  token?: string | null,
-  name?: string | null,
+  token?: string | null | undefined,
+  name?: string | null | undefined,
 ) {
   if (token) {
     const { data } = await supabaseAdmin
@@ -29,8 +29,8 @@ async function resolveParticipant(
 
 export async function loadOccurrenceGuestBundle(input: {
   occurrenceId: string;
-  token?: string | null;
-  name?: string | null;
+  token?: string | null | undefined;
+  name?: string | null | undefined;
 }): Promise<OccurrenceGuestBundle> {
   const { data: occ } = await supabaseAdmin
     .from("occurrences")
@@ -95,10 +95,10 @@ export async function loadOccurrenceGuestBundle(input: {
 
 export async function saveOccurrenceRsvp(input: {
   occurrenceId: string;
-  token?: string | null;
-  name?: string | null;
+  token?: string | null | undefined;
+  name?: string | null | undefined;
   state: "in" | "out" | "late";
-  note?: string | null;
+  note?: string | null | undefined;
 }) {
   const { data: occ } = await supabaseAdmin
     .from("occurrences")
