@@ -1,24 +1,67 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { CalendarCheck, Clock, Users } from "lucide-react";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Adulting is Hard — lock in a date with your group" },
+      {
+        name: "description",
+        content:
+          "Group scheduling that ships a decision. Under 30 seconds to respond, no signup for guests, timezone-aware.",
+      },
+      { property: "og:title", content: "Adulting is Hard — lock in a date with your group" },
+      {
+        property: "og:description",
+        content:
+          "Pick a template, share one link, get a decision. No accounts for responders, quorum not unanimity.",
+      },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 py-10">
+      <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+        Adulting is Hard
+      </p>
+      <h1 className="mt-4 text-4xl font-black leading-[1.05] tracking-tight">
+        Lock in a date without the 200-message thread.
+      </h1>
+      <p className="mt-4 text-base text-muted-foreground">
+        Pick a template, share one link, get a decision. Your people answer in under 30 seconds and
+        never make an account.
+      </p>
+
+      <ul className="mt-8 space-y-4">
+        {[
+          { icon: Clock, text: "Templates narrow the options, so nobody sees a wall of times." },
+          { icon: Users, text: "Quorum, not unanimity — good enough beats everyone." },
+          { icon: CalendarCheck, text: "Recurring: lock the cadence once, confirm each session." },
+        ].map(({ icon: Icon, text }) => (
+          <li key={text} className="flex min-w-0 items-start gap-3">
+            <Icon className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
+            <span className="min-w-0 text-sm text-muted-foreground">{text}</span>
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-auto pt-10">
+        <Link
+          to="/new"
+          className="flex h-14 w-full items-center justify-center rounded-2xl bg-primary text-base font-bold text-primary-foreground"
+        >
+          Start a plan
+        </Link>
+        <Link
+          to="/auth"
+          className="mt-3 flex min-h-11 w-full items-center justify-center text-sm text-muted-foreground underline underline-offset-4"
+        >
+          Organizer sign in
+        </Link>
+      </div>
+    </main>
   );
 }
