@@ -25,7 +25,12 @@ export interface LockedPlan {
     status: string;
     index: number;
   }[];
-  participants: { id: string; display_name: string; is_required: boolean }[];
+  participants: {
+    id: string;
+    display_name: string;
+    is_required: boolean;
+    timezone: string | null;
+  }[];
   /** occurrenceId -> participantId -> "in" | "out" | "late" */
   rsvps: Record<string, Record<string, string>>;
   /** participantId -> "yes" | "maybe" | "no" on the chosen one-off slot */
