@@ -33,7 +33,14 @@ export const Route = createFileRoute("/p/$slug")({
       { property: "og:title", content: "Can you make it? — Adulting is Hard" },
       {
         property: "og:description",
-        content: "Tap the times that work. 30 seconds, no signup.",
+        content: "Tap the times that work. Takes 30 seconds — no signup.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Can you make it? — Adulting is Hard" },
+      {
+        name: "twitter:description",
+        content: "Tap the times that work. Takes 30 seconds — no signup.",
       },
     ],
   }),
