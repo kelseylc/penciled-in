@@ -54,7 +54,7 @@ function GroupPageRoute() {
   if (query.error || !data)
     return (
       <main className="mx-auto w-full max-w-md px-5 py-8">
-      <AppBar />
+        <AppBar />
         {(query.error as Error)?.message ?? "Couldn't load this group."}
       </main>
     );
