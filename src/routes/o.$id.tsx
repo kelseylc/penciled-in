@@ -22,7 +22,7 @@ export const Route = createFileRoute("/o/$id")({
       { property: "og:title", content: "Are you in? — Adulting is Hard" },
       {
         property: "og:description",
-        content: "One tap to confirm the next session with your group.",
+        content: "One tap to confirm the next session. Takes 30 seconds — no signup.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
