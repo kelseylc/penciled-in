@@ -156,6 +156,13 @@ function RespondPage() {
     return [...map.values()];
   }, [bundle, timezone]);
 
+  // Saved availability older than 90 days probably isn't true anymore.
+  const staleDefaults = useMemo(() => {
+    const updated = bundle?.me?.defaults?.updated_at;
+    if (!updated) return false;
+    return Date.now() - new Date(updated).getTime() > 90 * 24 * 3600_000;
+  }, [bundle?.me?.defaults?.updated_at]);
+
   const respondedCount = bundle?.participants.filter((p) => p.responded).length ?? 0;
   const totalCount = bundle?.participants.length ?? 0;
   const outstanding = bundle?.participants.filter((p) => !p.responded) ?? [];
