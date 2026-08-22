@@ -15,13 +15,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/d/$slug")({
   head: () => ({
     meta: [
-      { title: "It's happening — Adulting is Hard" },
+      { title: "It's happening — Penciled.in" },
       {
         name: "description",
         content:
           "The date is locked. See the time in your zone, who's in, and add it to your calendar.",
       },
-      { property: "og:title", content: "It's happening — Adulting is Hard" },
+      { property: "og:title", content: "It's happening — Penciled.in" },
       {
         property: "og:description",
         content: "The date is locked in. Takes 30 seconds — no signup.",
@@ -111,7 +111,7 @@ function LockedPage() {
     const ics = buildIcs({
       uid: `${data.project.id}-${next.id}@adultingishard`,
       title: data.project.name,
-      description: `Locked in with Adulting is Hard. ${window.location.origin}/d/${slug}`,
+      description: `Locked in with Penciled.in. ${window.location.origin}/d/${slug}`,
       url: `${window.location.origin}/d/${slug}`,
       startUtc: next.scheduled_start_utc,
       endUtc: next.scheduled_end_utc,

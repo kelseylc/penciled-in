@@ -4,17 +4,17 @@ import { CalendarCheck, Clock, Users } from "lucide-react";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Adulting is Hard — lock in a date with your group" },
+      { title: "Penciled.in — lock in a date with your group" },
       {
         name: "description",
         content:
-          "Group scheduling that ships a decision. Under 30 seconds to respond, no signup for guests, timezone-aware.",
+          "Organize an event, share one link to attendees, find the dates that work, lock it in. No account or calendar syncing needed.",
       },
-      { property: "og:title", content: "Adulting is Hard — lock in a date with your group" },
+      { property: "og:title", content: "Penciled.in — Adulting is hard, scheduling shouldn't be." },
       {
         property: "og:description",
         content:
-          "Pick a template, share one link, get a decision. Takes 30 seconds — no signup.",
+          "Organize an event, share one link to attendees, find the dates that work, lock it in. No account or calendar syncing needed.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -27,14 +27,14 @@ function Index() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 py-10">
       <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
-        Adulting is Hard
+        Penciled.in
       </p>
       <h1 className="mt-4 text-4xl font-black leading-[1.05] tracking-tight">
-        Lock in a date without the 200-message thread.
+        Adulting is hard, scheduling shouldn't be.
       </h1>
       <p className="mt-4 text-base text-muted-foreground">
-        Pick a template, share one link, get a decision. Your people answer in under 30 seconds and
-        never make an account.
+        Organize an event, share one link to attendees, find the dates that work, lock it in. No
+        account or calendar syncing needed.
       </p>
 
       <ul className="mt-8 space-y-4">

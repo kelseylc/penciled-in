@@ -42,7 +42,7 @@ export function AppBar({ back = true, title }: Props) {
         to="/"
         className="flex min-h-11 min-w-0 flex-1 items-center truncate px-1 text-sm font-bold tracking-tight"
       >
-        {title ?? "Adulting is Hard"}
+        {title ?? "Penciled.in"}
       </Link>
 
       <DropdownMenu>

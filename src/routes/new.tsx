@@ -23,13 +23,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/new")({
   head: () => ({
     meta: [
-      { title: "New plan — Adulting is Hard" },
+      { title: "New plan — Penciled.in" },
       {
         name: "description",
         content:
           "Create a group plan in a few taps: pick a template, a date window, your people, and a quorum.",
       },
-      { property: "og:title", content: "New plan — Adulting is Hard" },
+      { property: "og:title", content: "New plan — Penciled.in" },
       {
         property: "og:description",
         content: "Pick a template, a date window, your people, and a quorum. Then share one link.",

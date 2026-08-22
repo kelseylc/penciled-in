@@ -20,13 +20,13 @@ import { listNames } from "@/lib/solver";
 export const Route = createFileRoute("/home")({
   head: () => ({
     meta: [
-      { title: "Your sessions — Adulting is Hard" },
+      { title: "Your sessions — Penciled.in" },
       {
         name: "description",
         content:
           "See the next sessions for every group you organize, spot at-risk nights early, and re-poll just that session.",
       },
-      { property: "og:title", content: "Your sessions — Adulting is Hard" },
+      { property: "og:title", content: "Your sessions — Penciled.in" },
       {
         property: "og:description",
         content: "Confirmed, at risk or pending — the recurring loop at a glance.",

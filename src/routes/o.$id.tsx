@@ -14,12 +14,12 @@ import { getOccurrenceGuest, submitOccurrenceRsvp } from "@/lib/occurrences.func
 export const Route = createFileRoute("/o/$id")({
   head: () => ({
     meta: [
-      { title: "Are you in? — Adulting is Hard" },
+      { title: "Are you in? — Penciled.in" },
       {
         name: "description",
         content: "Confirm this session in one tap. In, out, or running late — no signup.",
       },
-      { property: "og:title", content: "Are you in? — Adulting is Hard" },
+      { property: "og:title", content: "Are you in? — Penciled.in" },
       {
         property: "og:description",
         content: "One tap to confirm the next session. Takes 30 seconds — no signup.",
