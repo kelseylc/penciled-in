@@ -116,9 +116,23 @@ function HomePage() {
       </header>
 
       {byProject.size === 0 && (
-        <p className="text-sm text-muted-foreground">
-          No scheduled sessions yet. Lock in a plan and they&apos;ll show up here.
-        </p>
+        <div>
+          <p className="text-sm text-muted-foreground">
+            No scheduled sessions yet. Lock in a plan and they&apos;ll show up here.
+          </p>
+          <Link
+            to="/new"
+            className="mt-4 flex h-14 w-full items-center justify-center rounded-2xl bg-primary text-base font-bold text-primary-foreground"
+          >
+            Start scheduling
+          </Link>
+          <Link
+            to="/"
+            className="mt-3 flex min-h-11 w-full items-center justify-center rounded-2xl border border-border text-sm font-semibold"
+          >
+            Back to home
+          </Link>
+        </div>
       )}
 
       <div className="space-y-8">
