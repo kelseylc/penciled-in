@@ -8,13 +8,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Group scheduling that ships a decision. Under 30 seconds to respond, no signup for guests, timezone-aware.",
+          "Organize an event, share one link to attendees, find the dates that work, lock it in. No account or calendar syncing needed.",
       },
-      { property: "og:title", content: "Penciled.in — lock in a date with your group" },
+      { property: "og:title", content: "Penciled.in — Adulting is hard, scheduling shouldn't be." },
       {
         property: "og:description",
         content:
-          "Pick a template, share one link, get a decision. Takes 30 seconds — no signup.",
+          "Organize an event, share one link to attendees, find the dates that work, lock it in. No account or calendar syncing needed.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
