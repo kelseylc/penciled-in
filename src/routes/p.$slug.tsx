@@ -333,7 +333,9 @@ function RespondPage() {
         {prefilled && bannerOpen && (
           <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 rounded-2xl bg-accent p-4 text-accent-foreground">
             <p className="min-w-0 text-sm">
-              Pre-filled from your usual availability — tap anything to change it.
+              {staleDefaults
+                ? "This is from a while ago — still right? Tap anything to change it."
+                : "Pre-filled from your usual availability — tap anything to change it."}
             </p>
             <button
               type="button"
