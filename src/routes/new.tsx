@@ -180,6 +180,21 @@ function NewProject() {
     format(windowEnd, "yyyy-MM-dd"),
   ]);
 
+  const generationKey = generation
+    ? `${generation.slots.length}:${generation.slots[0]?.start_utc ?? ""}:${generation.slots[generation.slots.length - 1]?.start_utc ?? ""}`
+    : "";
+  useEffect(() => {
+    setRemovedSlots([]);
+    setExtraSlots([]);
+  }, [generationKey]);
+
+  const finalSlots = useMemo(() => {
+    const gone = new Set(removedSlots);
+    return [...(generation?.slots ?? []).filter((s) => !gone.has(s.start_utc)), ...extraSlots].sort(
+      (a, b) => a.start_utc.localeCompare(b.start_utc),
+    );
+  }, [generation, removedSlots, extraSlots]);
+
   function patch(next: Partial<EventConstraints>) {
     setConstraints((c) => ({ ...c, ...next }));
   }
