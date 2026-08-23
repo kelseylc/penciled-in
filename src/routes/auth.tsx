@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
+import { FieldError } from "@/components/FieldError";
+import { PasswordField } from "@/components/PasswordField";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
@@ -69,20 +71,16 @@ let pendingLinkError = readAuthErrorFromUrl();
  */
 type Sent = { kind: "confirm" | "reset"; email: string };
 
-type FieldErrors = { displayName?: string; email?: string; password?: string; form?: string };
+type FieldErrors = {
+  displayName?: string;
+  email?: string;
+  password?: string;
+  confirm?: string;
+  form?: string;
+};
 
 function issueOf(error: z.ZodError, fallback: string): string {
   return error.issues[0]?.message ?? fallback;
-}
-
-/** Errors live beside the field they belong to, not in a toast that times out. */
-function FieldError({ id, message }: { id: string; message: string | undefined }) {
-  if (!message) return null;
-  return (
-    <p id={id} role="alert" className="text-sm font-medium text-destructive">
-      {message}
-    </p>
-  );
 }
 
 function AuthPage() {
@@ -94,6 +92,7 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [sent, setSent] = useState<Sent | null>(null);
@@ -106,6 +105,7 @@ function AuthPage() {
   const nameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
+  const confirmRef = useRef<HTMLInputElement>(null);
 
   const screen: Screen = modeParam ?? "login";
 
@@ -147,6 +147,12 @@ function AuthPage() {
   }, [screen, sent]);
 
   useEffect(() => {
+    if (sent) return;
+    if (!window.matchMedia?.("(pointer: fine)").matches) return;
+    (screen === "signup" ? nameRef : emailRef).current?.focus();
+  }, [screen, sent]);
+
+  useEffect(() => {
     if (cooldown <= 0) return;
     const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
     return () => clearTimeout(t);
@@ -155,6 +161,7 @@ function AuthPage() {
   /** Switching screens is a navigation, so Back returns to the previous one. */
   function goTo(next: Screen) {
     setPassword("");
+    setConfirm("");
     setSent(null);
     setErrors({});
     setUnconfirmedHint(false);
@@ -170,10 +177,11 @@ function AuthPage() {
   }
 
   /** Editing a field retires the complaint about it and the last attempt. */
-  function edit(key: "displayName" | "email" | "password", value: string) {
+  function edit(key: "displayName" | "email" | "password" | "confirm", value: string) {
     if (key === "displayName") setDisplayName(value);
     if (key === "email") setEmail(value);
     if (key === "password") setPassword(value);
+    if (key === "confirm") setConfirm(value);
     setErrors((prev) => {
       const next = { ...prev };
       delete next[key];
@@ -189,6 +197,7 @@ function AuthPage() {
     if (found.displayName) nameRef.current?.focus();
     else if (found.email) emailRef.current?.focus();
     else if (found.password) passwordRef.current?.focus();
+    else if (found.confirm) confirmRef.current?.focus();
   }
 
   /** Every problem at once, rather than one per submit. */
@@ -245,11 +254,13 @@ function AuthPage() {
     const name = displayNameSchema.safeParse(displayName);
     const parsed = emailSchema.safeParse(email);
     const pw = passwordSchema.safeParse(password);
-    if (!name.success || !parsed.success || !pw.success) {
+    const mismatch = pw.success && password !== confirm;
+    if (!name.success || !parsed.success || !pw.success || mismatch) {
       const found: FieldErrors = {
         ...(name.success ? {} : { displayName: issueOf(name.error, "Add a name") }),
         ...(parsed.success ? {} : { email: issueOf(parsed.error, "Check your email") }),
         ...(pw.success ? {} : { password: issueOf(pw.error, "Check your password") }),
+        ...(mismatch ? { confirm: "Those passwords don't match" } : {}),
       };
       setErrors(found);
       focusFirst(found);
@@ -441,23 +452,15 @@ function AuthPage() {
             />
             <FieldError id="email-error" message={errors.email} />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              ref={passwordRef}
-              type="password"
-              required
-              autoComplete="current-password"
-              aria-invalid={!!errors.password}
-              aria-describedby={errors.password ? "password-error" : undefined}
-              className="h-14 rounded-xl text-base"
-              value={password}
-              onChange={(e) => edit("password", e.target.value)}
-              placeholder="At least 8 characters"
-            />
-            <FieldError id="password-error" message={errors.password} />
-          </div>
+          <PasswordField
+            id="password"
+            label="Password"
+            inputRef={passwordRef}
+            autoComplete="current-password"
+            value={password}
+            onChange={(v) => edit("password", v)}
+            error={errors.password}
+          />
 
           <FieldError id="login-error" message={errors.form} />
 
@@ -545,23 +548,25 @@ function AuthPage() {
             />
             <FieldError id="signup-email-error" message={errors.email} />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="signup-password">Password</Label>
-            <Input
-              id="signup-password"
-              ref={passwordRef}
-              type="password"
-              required
-              autoComplete="new-password"
-              aria-invalid={!!errors.password}
-              aria-describedby={errors.password ? "signup-password-error" : undefined}
-              className="h-14 rounded-xl text-base"
-              value={password}
-              onChange={(e) => edit("password", e.target.value)}
-              placeholder="At least 8 characters"
-            />
-            <FieldError id="signup-password-error" message={errors.password} />
-          </div>
+          <PasswordField
+            id="signup-password"
+            label="Password"
+            inputRef={passwordRef}
+            autoComplete="new-password"
+            value={password}
+            onChange={(v) => edit("password", v)}
+            error={errors.password}
+          />
+          <PasswordField
+            id="signup-confirm"
+            label="Confirm password"
+            inputRef={confirmRef}
+            autoComplete="new-password"
+            placeholder="Type it again"
+            value={confirm}
+            onChange={(v) => edit("confirm", v)}
+            error={errors.confirm}
+          />
 
           <FieldError id="signup-error" message={errors.form} />
 

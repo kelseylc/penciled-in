@@ -5,8 +5,8 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FieldError } from "@/components/FieldError";
+import { PasswordField } from "@/components/PasswordField";
 import { supabase } from "@/integrations/supabase/client";
 import { readAuthErrorFromUrl, urlHasRecoveryGrant, type AuthLinkError } from "@/lib/auth-links";
 
@@ -51,15 +51,6 @@ const LINK_GRACE_MS = 4000;
 type Gate = "checking" | "verify" | "ready" | "invalid";
 
 type FieldErrors = { current?: string; password?: string; confirm?: string; form?: string };
-
-function FieldError({ id, message }: { id: string; message: string | undefined }) {
-  if (!message) return null;
-  return (
-    <p id={id} role="alert" className="text-sm font-medium text-destructive">
-      {message}
-    </p>
-  );
-}
 
 function ResetPasswordPage() {
   const navigate = useNavigate();
@@ -224,23 +215,16 @@ function ResetPasswordPage() {
 
       {gate === "verify" && (
         <form onSubmit={confirmIdentity} noValidate className="mt-8 space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="current-password">Current password</Label>
-            <Input
-              id="current-password"
-              ref={currentRef}
-              type="password"
-              required
-              autoComplete="current-password"
-              aria-invalid={!!errors.current}
-              aria-describedby={errors.current ? "current-password-error" : undefined}
-              className="h-14 rounded-xl text-base"
-              value={currentPassword}
-              onChange={(e) => edit("current", e.target.value)}
-              placeholder="The one you use today"
-            />
-            <FieldError id="current-password-error" message={errors.current} />
-          </div>
+          <PasswordField
+            id="current-password"
+            label="Current password"
+            inputRef={currentRef}
+            autoComplete="current-password"
+            placeholder="The one you use today"
+            value={currentPassword}
+            onChange={(v) => edit("current", v)}
+            error={errors.current}
+          />
           <Button type="submit" disabled={busy} className="h-14 w-full rounded-2xl text-base">
             {busy ? "Checking…" : "Continue"}
           </Button>
@@ -256,40 +240,25 @@ function ResetPasswordPage() {
 
       {(gate === "checking" || gate === "ready") && (
         <form onSubmit={submit} noValidate className="mt-8 space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="new-password">New password</Label>
-            <Input
-              id="new-password"
-              ref={passwordRef}
-              type="password"
-              required
-              autoComplete="new-password"
-              aria-invalid={!!errors.password}
-              aria-describedby={errors.password ? "new-password-error" : undefined}
-              className="h-14 rounded-xl text-base"
-              value={password}
-              onChange={(e) => edit("password", e.target.value)}
-              placeholder="At least 8 characters"
-            />
-            <FieldError id="new-password-error" message={errors.password} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="confirm-password">Confirm new password</Label>
-            <Input
-              id="confirm-password"
-              ref={confirmRef}
-              type="password"
-              required
-              autoComplete="new-password"
-              aria-invalid={!!errors.confirm}
-              aria-describedby={errors.confirm ? "confirm-password-error" : undefined}
-              className="h-14 rounded-xl text-base"
-              value={confirm}
-              onChange={(e) => edit("confirm", e.target.value)}
-              placeholder="Type it again"
-            />
-            <FieldError id="confirm-password-error" message={errors.confirm} />
-          </div>
+          <PasswordField
+            id="new-password"
+            label="New password"
+            inputRef={passwordRef}
+            autoComplete="new-password"
+            value={password}
+            onChange={(v) => edit("password", v)}
+            error={errors.password}
+          />
+          <PasswordField
+            id="confirm-password"
+            label="Confirm new password"
+            inputRef={confirmRef}
+            autoComplete="new-password"
+            placeholder="Type it again"
+            value={confirm}
+            onChange={(v) => edit("confirm", v)}
+            error={errors.confirm}
+          />
 
           <FieldError id="reset-error" message={errors.form} />
 
