@@ -2,10 +2,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { randomSlug } from "@/lib/slug";
 
-function randomSlug() {
-  return Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 6);
-}
+
 
 /** Turn the people on a locked plan into a reusable saved group. */
 export const saveGroupFromProject = createServerFn({ method: "POST" })
@@ -190,28 +189,10 @@ export interface GroupManage {
   members: ManageMember[];
 }
 
-const slugInput = (data: unknown) => z.object({ slug: z.string().min(3).max(40) }).parse(data);
-
-async function loadGroup(sb: ReturnType<typeof groupClient>, slug: string) {
-  const { data: group } = await sb
-    .from("groups")
-    .select("id, name, slug, owner_id")
-    .eq("slug", slug)
-    .maybeSingle();
-  if (!group) throw new Error("That group isn't available to you.");
-  return group;
-}
-// Type helper only — never called.
-declare function groupClient(): NonNullable<
-  Awaited<ReturnType<typeof requireSupabaseAuth.client>>
-> extends never
-  ? never
-  : never;
-
 /** Organizer view of a saved group: members, co-organizers, required defaults. */
 export const getGroupManage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(slugInput)
+  .inputValidator((data: unknown) => z.object({ slug: z.string().min(3).max(40) }).parse(data))
   .handler(async ({ data, context }): Promise<GroupManage> => {
     const sb = context.supabase;
     const { data: group } = await sb
