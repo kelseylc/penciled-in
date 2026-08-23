@@ -1,0 +1,9 @@
+You're invited
+
+Someone invited you to Penciled.in. Accept with the link below -- it takes about 30 seconds.
+
+{{ .ConfirmationURL }}
+
+Not expecting this? You can ignore this email.
+
+-- Penciled.in
