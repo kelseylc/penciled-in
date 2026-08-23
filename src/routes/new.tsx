@@ -39,8 +39,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/new")({
-  validateSearch: (search: Record<string, unknown>): { draft?: 1 } =>
-    search["draft"] ? { draft: 1 } : {},
+  validateSearch: (search: Record<string, unknown>): { draft?: 1; demo?: 1 } => ({
+    ...(search["draft"] ? { draft: 1 as const } : {}),
+    ...(search["demo"] ? { demo: 1 as const } : {}),
+  }),
 
   head: () => ({
     meta: [
