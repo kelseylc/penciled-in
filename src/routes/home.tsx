@@ -1,11 +1,11 @@
 import { AppBar } from "@/components/AppBar";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { format } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 import { AlertTriangle, Copy } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -60,6 +60,7 @@ const CHIP: Record<string, { label: string; className: string }> = {
 function HomePage() {
   const { session, loading } = useAuth();
   const tz = useMemo(localTz, []);
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const fetchOccurrences = useServerFn(getOrganizerOccurrences);
   const actFn = useServerFn(actOnOccurrence);
