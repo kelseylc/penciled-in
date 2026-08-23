@@ -1,3 +1,4 @@
+import { AddToHomeScreen } from "@/components/AddToHomeScreen";
 import { AppBar } from "@/components/AppBar";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -236,6 +237,10 @@ function LockedPage() {
           </ul>
         </section>
       )}
+
+      <AddToHomeScreen />
+
+
 
       <div className="sticky bottom-0 mt-8 space-y-2 bg-gradient-to-t from-background via-background pb-6 pt-4">
         <Button className="h-14 w-full rounded-2xl text-base" onClick={calendarFile}>
