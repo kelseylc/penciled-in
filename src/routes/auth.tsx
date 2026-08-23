@@ -312,6 +312,23 @@ function AuthPage() {
             {busy ? "Signing in…" : "Sign in"}
           </Button>
 
+          {unconfirmedHint && (
+            <div className="rounded-2xl bg-card p-4 text-sm text-muted-foreground">
+              <p>
+                If you just created this account, tap the confirmation link we emailed you first —
+                unconfirmed accounts can't sign in yet.
+              </p>
+              <button
+                type="button"
+                onClick={resendConfirmation}
+                disabled={cooldown > 0}
+                className="mt-2 min-h-11 text-sm font-bold text-primary disabled:text-muted-foreground"
+              >
+                {cooldown > 0 ? `Resend link in ${cooldown}s` : "Resend confirmation link"}
+              </button>
+            </div>
+          )}
+
           <div className="flex flex-col gap-1 pt-2">
             <button
               type="button"
