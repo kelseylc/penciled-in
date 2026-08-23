@@ -121,7 +121,15 @@ function AuthPage() {
       if (error) throw error;
       // The session listener redirects to /home.
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't sign you in");
+      // Supabase masks "email not confirmed" as invalid credentials so accounts
+      // can't be enumerated. Offer the confirmation path instead of dead-ending.
+      const message = err instanceof Error ? err.message : "";
+      if (/invalid login credentials/i.test(message)) {
+        setUnconfirmedHint(true);
+        toast.error("That email and password didn't match — or the email is still unconfirmed.");
+      } else {
+        toast.error(message || "Couldn't sign you in");
+      }
     } finally {
       setBusy(false);
     }
