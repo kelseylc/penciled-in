@@ -30,6 +30,10 @@ export const Route = createFileRoute("/auth")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  // ?mode=signup|forgot deep-links a specific screen (used by /test auditing).
+  validateSearch: (search: Record<string, unknown>) => ({
+    mode: search.mode === "signup" || search.mode === "forgot" ? search.mode : undefined,
+  }),
   component: AuthPage,
 });
 
