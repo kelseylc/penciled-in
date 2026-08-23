@@ -64,7 +64,7 @@ type Person = {
 
 type GroupRow = { id: string; name: string };
 
-const STEPS = ["Template", "Name", "Dates", "People", "Quorum", "Deadline"] as const;
+const STEPS = ["Template", "Name", "Dates", "People", "Quorum", "Deadline", "Review"] as const;
 
 function NewProject() {
   const navigate = useNavigate();
