@@ -98,6 +98,8 @@ function NewProject() {
   const [hasDeadline, setHasDeadline] = useState(true);
   const [deadline, setDeadline] = useState<Date>(addDays(new Date(), 5));
   const [busy, setBusy] = useState(false);
+  const [removedSlots, setRemovedSlots] = useState<string[]>([]);
+  const [extraSlots, setExtraSlots] = useState<GeneratedSlot[]>([]);
   const [draftNote, setDraftNote] = useState<{ summary: string; missing: string[] } | null>(null);
   const search = Route.useSearch();
 
