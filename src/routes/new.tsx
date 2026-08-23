@@ -15,7 +15,9 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { takeDraft } from "@/lib/plan-draft";
 import { createProject } from "@/lib/projects.functions";
+
 import { effectiveDurationMinutes, generateCandidateSlots, MAX_SLOTS } from "@/lib/slots";
 import {
   DAY_LABELS,
@@ -30,6 +32,9 @@ import {
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/new")({
+  validateSearch: (search: Record<string, unknown>): { draft?: 1 } =>
+    search["draft"] ? { draft: 1 } : {},
+
   head: () => ({
     meta: [
       { title: "New plan — Penciled.in" },
@@ -47,6 +52,7 @@ export const Route = createFileRoute("/new")({
   }),
   component: NewProject,
 });
+
 
 type Person = {
   key: string;
@@ -92,6 +98,44 @@ function NewProject() {
   const [hasDeadline, setHasDeadline] = useState(true);
   const [deadline, setDeadline] = useState<Date>(addDays(new Date(), 5));
   const [busy, setBusy] = useState(false);
+  const [draftNote, setDraftNote] = useState<{ summary: string; missing: string[] } | null>(null);
+  const search = Route.useSearch();
+
+  useEffect(() => {
+    if (!search.draft || !session) return;
+    const draft = takeDraft();
+    if (!draft) return;
+    setTemplateId(draft.template);
+    setConstraints({
+      days: draft.days,
+      startAfter: draft.startAfter,
+      endBy: draft.endBy,
+      durationMinutes: draft.durationMinutes,
+      fullDay: draft.fullDay,
+    });
+    if (draft.name) setName(draft.name);
+    setMode(draft.mode);
+    if (draft.cadence) setCadence(draft.cadence);
+    setWindowMode("rolling");
+    setRollingWeeks(draft.rollingWeeks || 4);
+    const parsedPeople = draft.people.map((p) => ({
+      key: crypto.randomUUID(),
+      display_name: p.display_name,
+      timezone: tz,
+      is_required: p.is_required,
+      profile_id: null,
+    }));
+    setPeople(parsedPeople);
+    if (draft.quorum) {
+      setQuorum(draft.quorum);
+      setQuorumTouched(true);
+    }
+    if (draft.deadlineDays) setDeadline(addDays(new Date(), draft.deadlineDays));
+    setDraftNote({ summary: draft.summary, missing: draft.missing });
+    setStep(parsedPeople.length === 0 ? 3 : draft.name ? 4 : 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.draft, session]);
+
 
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/auth" });
@@ -259,6 +303,21 @@ function NewProject() {
           />
         ))}
       </div>
+
+      {draftNote && (
+        <div className="mt-4 rounded-2xl border-2 border-primary/40 bg-primary/10 p-4">
+          <p className="text-sm font-bold">Draft ready from your description</p>
+          <p className="mt-1 text-xs text-muted-foreground">{draftNote.summary}</p>
+          {draftNote.missing.length > 0 && (
+            <p className="mt-2 text-xs font-semibold text-primary">
+              Still need: {draftNote.missing.join(", ")}. Everything else is pre-filled — tap back
+              anytime to change it.
+            </p>
+          )}
+        </div>
+      )}
+
+
 
       <div className="mt-8 flex-1">
         {step === 0 && (
