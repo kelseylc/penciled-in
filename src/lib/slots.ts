@@ -1,9 +1,7 @@
 import { addDays, format, parseISO } from "date-fns";
 import { fromZonedTime } from "date-fns-tz";
 
-import type { ProjectTemplate, TimeRange } from "./templates";
-
-export type Granularity = "daypart" | "hourly";
+import type { EventConstraints, ProjectTemplate } from "./templates";
 
 export interface GeneratedSlot {
   start_utc: string;
@@ -12,18 +10,13 @@ export interface GeneratedSlot {
 
 export interface SlotGenerationResult {
   slots: GeneratedSlot[];
-  granularityUsed: Granularity;
+  /** Hour step actually used between start options. */
+  stepHours: number;
   widened: boolean;
   truncated: boolean;
 }
 
 export const MAX_SLOTS = 200;
-
-const DAYPARTS: TimeRange[] = [
-  { start: 8, end: 12 }, // morning
-  { start: 12, end: 17 }, // afternoon
-  { start: 17, end: 24 }, // evening
-];
 
 function toUtc(dayISO: string, hour: number, timezone: string): Date {
   const h = Math.floor(hour);
@@ -36,94 +29,116 @@ function toUtc(dayISO: string, hour: number, timezone: string): Date {
   return fromZonedTime(local, timezone);
 }
 
-function intersect(a: TimeRange, b: TimeRange): TimeRange | null {
-  const start = Math.max(a.start, b.start);
-  const end = Math.min(a.end, b.end);
-  return end > start ? { start, end } : null;
-}
-
-function buildSlots(
-  template: ProjectTemplate,
-  durationMinutes: number,
-  windowStart: string,
-  windowEnd: string,
-  timezone: string,
-  granularity: Granularity,
-): GeneratedSlot[] {
-  const durationHours = durationMinutes / 60;
-  const out: GeneratedSlot[] = [];
+function eachDay(windowStart: string, windowEnd: string): string[] {
+  const out: string[] = [];
   const last = parseISO(`${windowEnd}T00:00:00`);
   let cursor = parseISO(`${windowStart}T00:00:00`);
-
   while (cursor.getTime() <= last.getTime()) {
-    const dayISO = format(cursor, "yyyy-MM-dd");
-    const dow = cursor.getDay();
-    const kind = dow === 0 || dow === 6 ? "weekend" : "weekday";
-    const ranges = template.windows[kind];
-
-    for (const range of ranges) {
-      if (granularity === "hourly") {
-        for (let h = range.start; h + durationHours <= range.end + 1e-9; h += 1) {
-          out.push({
-            start_utc: toUtc(dayISO, h, timezone).toISOString(),
-            end_utc: toUtc(dayISO, h + durationHours, timezone).toISOString(),
-          });
-        }
-      } else {
-        for (const part of DAYPARTS) {
-          const hit = intersect(range, part);
-          if (!hit) continue;
-          if (hit.end - hit.start + 1e-9 < durationHours) continue;
-          out.push({
-            start_utc: toUtc(dayISO, hit.start, timezone).toISOString(),
-            end_utc: toUtc(dayISO, hit.start + durationHours, timezone).toISOString(),
-          });
-        }
-      }
-    }
+    out.push(format(cursor, "yyyy-MM-dd"));
     cursor = addDays(cursor, 1);
   }
+  return out;
+}
 
-  // de-dupe identical starts
+function build(
+  c: EventConstraints,
+  days: string[],
+  timezone: string,
+  stepHours: number,
+): GeneratedSlot[] {
+  const allowed = new Set(c.days);
+  const out: GeneratedSlot[] = [];
+  const startAfter = Math.max(0, Math.min(24, c.startAfter));
+  const endBy = Math.max(startAfter, Math.min(24, c.endBy));
+
+  if (c.fullDay) {
+    // Contiguous runs of allowed days become one multi-day block.
+    let run: string[] = [];
+    const flush = () => {
+      if (run.length === 0) return;
+      const first = run[0]!;
+      const last = run[run.length - 1]!;
+      out.push({
+        start_utc: toUtc(first, startAfter, timezone).toISOString(),
+        end_utc: toUtc(last, endBy, timezone).toISOString(),
+      });
+      run = [];
+    };
+    for (const day of days) {
+      const dow = parseISO(`${day}T00:00:00`).getDay();
+      if (allowed.has(dow)) run.push(day);
+      else flush();
+    }
+    flush();
+    return out;
+  }
+
+  for (const day of days) {
+    const dow = parseISO(`${day}T00:00:00`).getDay();
+    if (!allowed.has(dow)) continue;
+
+    if (c.durationMinutes === null) {
+      out.push({
+        start_utc: toUtc(day, startAfter, timezone).toISOString(),
+        end_utc: toUtc(day, endBy, timezone).toISOString(),
+      });
+      continue;
+    }
+
+    const durationHours = c.durationMinutes / 60;
+    for (let h = startAfter; h + durationHours <= endBy + 1e-9; h += stepHours) {
+      out.push({
+        start_utc: toUtc(day, h, timezone).toISOString(),
+        end_utc: toUtc(day, h + durationHours, timezone).toISOString(),
+      });
+    }
+  }
+
   const seen = new Set<string>();
   return out.filter((s) => (seen.has(s.start_utc) ? false : (seen.add(s.start_utc), true)));
 }
 
 export function generateCandidateSlots(opts: {
-  template: ProjectTemplate;
-  durationMinutes: number;
+  constraints: EventConstraints;
   windowStart: string;
   windowEnd: string;
   timezone: string;
-  granularity: Granularity;
 }): SlotGenerationResult {
-  const { template, durationMinutes, windowStart, windowEnd, timezone } = opts;
-  let granularityUsed = opts.granularity;
-  let slots = buildSlots(
-    template,
-    durationMinutes,
-    windowStart,
-    windowEnd,
-    timezone,
-    granularityUsed,
-  );
+  const days = eachDay(opts.windowStart, opts.windowEnd);
+  let stepHours = 1;
+  let slots = build(opts.constraints, days, opts.timezone, stepHours);
   let widened = false;
 
-  if (slots.length > MAX_SLOTS && granularityUsed === "hourly") {
-    granularityUsed = "daypart";
+  while (slots.length > MAX_SLOTS && stepHours < 6 && opts.constraints.durationMinutes !== null) {
+    stepHours += 1;
     widened = true;
-    slots = buildSlots(
-      template,
-      durationMinutes,
-      windowStart,
-      windowEnd,
-      timezone,
-      granularityUsed,
-    );
+    slots = build(opts.constraints, days, opts.timezone, stepHours);
   }
 
   const truncated = slots.length > MAX_SLOTS;
   if (truncated) slots = slots.slice(0, MAX_SLOTS);
 
-  return { slots, granularityUsed, widened, truncated };
+  return { slots, stepHours, widened, truncated };
+}
+
+/** Minutes stored on the project row for a given set of constraints. */
+export function effectiveDurationMinutes(c: EventConstraints): number {
+  if (c.fullDay) {
+    const span = Math.max(1, c.days.length);
+    return Math.min(10080, Math.round(span * 24 * 60));
+  }
+  if (c.durationMinutes === null) {
+    return Math.max(15, Math.round((c.endBy - c.startAfter) * 60));
+  }
+  return c.durationMinutes;
+}
+
+export function templateConstraints(
+  template: ProjectTemplate,
+  durationMinutes?: number | null,
+): EventConstraints {
+  return {
+    ...template.defaults,
+    ...(durationMinutes === undefined ? {} : { durationMinutes }),
+  };
 }
