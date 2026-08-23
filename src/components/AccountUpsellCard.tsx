@@ -1,3 +1,4 @@
+import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -5,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { safeRedirect } from "@/lib/auth-links";
 
 type Variant = "respondent" | "organizer";
 
@@ -22,8 +24,11 @@ export function AccountUpsellCard({ variant = "respondent" }: { variant?: Varian
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [sent, setSent] = useState(false);
+  const [existingAccount, setExistingAccount] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [busy, setBusy] = useState(false);
+  const here = useRouterState({ select: (s) => s.location.href });
+  const backHere = safeRedirect(here);
 
   useEffect(() => {
     try {
@@ -55,12 +60,20 @@ export function AccountUpsellCard({ variant = "respondent" }: { variant?: Varian
     if (!address || password.length < 8) return;
     setBusy(true);
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: address,
         password,
-        options: { emailRedirectTo: `${window.location.origin}/` },
+        // Land the confirmation on /auth, not "/": that route is what claims
+        // this browser's guest answers, which is the whole point of the offer.
+        options: { emailRedirectTo: `${window.location.origin}/auth` },
       });
       if (error) throw error;
+      // An address that already has an account comes back as success with no
+      // identities and no email sent — the same dead end the sign-in page had.
+      if (data.user && (data.user.identities?.length ?? 0) === 0) {
+        setExistingAccount(true);
+        return;
+      }
       setSent(true);
       setCooldown(30);
     } catch (e) {
@@ -79,7 +92,21 @@ export function AccountUpsellCard({ variant = "respondent" }: { variant?: Varian
         hunting for the link in your group chat.
       </p>
 
-      {sent ? (
+      {existingAccount ? (
+        <div className="mt-4 space-y-3">
+          <p className="text-sm font-semibold">You already have an account</p>
+          <p className="text-sm text-muted-foreground">
+            {email.trim()} is already registered. Sign in and we'll link this answer to it.
+          </p>
+          <Link
+            to="/auth"
+            search={{ ...(backHere ? { redirect: backHere } : {}) }}
+            className="flex h-12 w-full items-center justify-center rounded-xl bg-primary text-base font-bold text-primary-foreground"
+          >
+            Sign in
+          </Link>
+        </div>
+      ) : sent ? (
         <div className="mt-4 space-y-3">
           <p className="text-sm font-semibold">Confirm your email</p>
           <p className="text-sm text-muted-foreground">
@@ -108,7 +135,10 @@ export function AccountUpsellCard({ variant = "respondent" }: { variant?: Varian
             className="h-12 text-base"
             placeholder="you@email.com"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setExistingAccount(false);
+            }}
           />
           <Label htmlFor="upsell-password" className="sr-only">
             Password
