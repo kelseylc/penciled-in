@@ -1,11 +1,11 @@
 import { AppBar } from "@/components/AppBar";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { format } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 import { AlertTriangle, Copy } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -20,13 +20,13 @@ import { listNames } from "@/lib/solver";
 export const Route = createFileRoute("/home")({
   head: () => ({
     meta: [
-      { title: "Your sessions — Penciled.in" },
+      { title: "My events — Penciled.in" },
       {
         name: "description",
         content:
           "See the next sessions for every group you organize, spot at-risk nights early, and re-poll just that session.",
       },
-      { property: "og:title", content: "Your sessions — Penciled.in" },
+      { property: "og:title", content: "My events — Penciled.in" },
       {
         property: "og:description",
         content: "Confirmed, at risk or pending — the recurring loop at a glance.",
@@ -60,7 +60,6 @@ const CHIP: Record<string, { label: string; className: string }> = {
 function HomePage() {
   const { session, loading } = useAuth();
   const tz = useMemo(localTz, []);
-  const navigate = useNavigate();
   const qc = useQueryClient();
   const fetchOccurrences = useServerFn(getOrganizerOccurrences);
   const actFn = useServerFn(actOnOccurrence);
@@ -87,18 +86,11 @@ function HomePage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // Nothing scheduled yet? The landing screen (prompt box + templates) is more useful.
-  useEffect(() => {
-    if (!loading && session && query.isSuccess && (query.data ?? []).length === 0) {
-      navigate({ to: "/", replace: true });
-    }
-  }, [loading, session, query.isSuccess, query.data, navigate]);
-
   if (loading) return <Shell>Loading…</Shell>;
   if (!session)
     return (
       <Shell>
-        <p className="text-muted-foreground">Sign in to see your group&apos;s sessions.</p>
+        <p className="text-muted-foreground">Sign in to see your group's sessions.</p>
         <Link to="/auth" className="mt-4 inline-block underline">
           Sign in
         </Link>
@@ -111,7 +103,35 @@ function HomePage() {
       new Date(a.scheduled_start_utc).getTime() - new Date(b.scheduled_start_utc).getTime(),
   );
   const next = all[0];
-  if (!next) return <Shell>Loading your sessions…</Shell>;
+  if (!next) {
+    return (
+      <Shell>
+        <header className="mb-6">
+          <h1 className="text-2xl font-bold tracking-tight">My events</h1>
+          <p className="text-sm text-muted-foreground">
+            Your scheduled and upcoming plans will show up here.
+          </p>
+        </header>
+        <div className="rounded-2xl border border-dashed border-border p-6 text-center">
+          <p className="text-sm text-muted-foreground">
+            No events yet. Start a plan from a template or describe it in plain words.
+          </p>
+        </div>
+        <Link
+          to="/new"
+          className="mt-4 flex h-14 w-full items-center justify-center rounded-2xl bg-primary text-base font-bold text-primary-foreground"
+        >
+          Start scheduling
+        </Link>
+        <Link
+          to="/"
+          className="mt-3 flex h-12 w-full items-center justify-center rounded-2xl border border-border text-sm font-semibold"
+        >
+          Back to home
+        </Link>
+      </Shell>
+    );
+  }
 
   return (
     <Shell>
@@ -208,7 +228,7 @@ function OccurrenceCard({
               {occ.requiredOut.length > 0 && (
                 <>
                   {" "}
-                  {listNames(occ.requiredOut)} (required) can&apos;t make it.
+                  {listNames(occ.requiredOut)} (required) can't make it.
                 </>
               )}
             </span>
@@ -248,7 +268,7 @@ function OccurrenceCard({
 
       {occ.status === "repolling" && occ.repollSlug && (
         <div className="mt-4 rounded-xl border border-border bg-muted/40 p-3 text-sm">
-          <p>Re-polling this session (±7 days). Your cadence hasn&apos;t moved.</p>
+          <p>Re-polling this session (±7 days). Your cadence hasn't moved.</p>
           <div className="mt-3 flex gap-2">
             <Link
               to="/share/$slug"
