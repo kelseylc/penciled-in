@@ -2,7 +2,7 @@ import { AppBar } from "@/components/AppBar";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { addDays, format } from "date-fns";
-import { ChevronLeft, Mic, Plus, X } from "lucide-react";
+import { ChevronLeft, Plus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { DateRange } from "react-day-picker";
 import { toast } from "sonner";
@@ -263,7 +263,7 @@ function NewProject() {
       <div className="mt-8 flex-1">
         {step === 0 && (
           <section>
-            <h1 className="text-2xl font-black tracking-tight">What are we doing?</h1>
+            <h1 className="text-2xl font-black tracking-tight">I'm organizing a:</h1>
             <div className="mt-5 space-y-3">
               {TEMPLATES.map((t) => (
                 <button
@@ -384,13 +384,6 @@ function NewProject() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
-              <button
-                type="button"
-                disabled
-                className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground opacity-60"
-              >
-                <Mic className="size-4" /> Voice input coming soon
-              </button>
             </div>
 
             <div>
