@@ -208,6 +208,26 @@ function AuthPage() {
     }
   }
 
+  /** Re-sends the signup confirmation link (not a code). */
+  async function resendConfirmation() {
+    if (cooldown > 0) return;
+    const address = parseEmail();
+    if (!address) return;
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: address,
+        options: { emailRedirectTo: `${window.location.origin}/auth` },
+      });
+      if (error) throw error;
+      setCooldown(30);
+      toast.success("Confirmation email sent again");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't resend the email");
+    }
+  }
+
+
   async function verify(code: string) {
     const address = emailSchema.safeParse(email);
     if (!address.success) return;
