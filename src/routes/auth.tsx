@@ -70,6 +70,7 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [settingPassword, setSettingPassword] = useState(false);
+  const [unconfirmedHint, setUnconfirmedHint] = useState(false);
 
   // Claim guest history and route onward once signed in — unless we're mid
   // password reset, in which case stay on the reset form.
