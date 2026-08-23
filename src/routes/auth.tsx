@@ -70,6 +70,7 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [settingPassword, setSettingPassword] = useState(false);
+  const [unconfirmedHint, setUnconfirmedHint] = useState(false);
 
   // Claim guest history and route onward once signed in — unless we're mid
   // password reset, in which case stay on the reset form.
@@ -121,7 +122,15 @@ function AuthPage() {
       if (error) throw error;
       // The session listener redirects to /home.
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't sign you in");
+      // Supabase masks "email not confirmed" as invalid credentials so accounts
+      // can't be enumerated. Offer the confirmation path instead of dead-ending.
+      const message = err instanceof Error ? err.message : "";
+      if (/invalid login credentials/i.test(message)) {
+        setUnconfirmedHint(true);
+        toast.error("That email and password didn't match — or the email is still unconfirmed.");
+      } else {
+        toast.error(message || "Couldn't sign you in");
+      }
     } finally {
       setBusy(false);
     }
@@ -302,6 +311,23 @@ function AuthPage() {
           <Button type="submit" disabled={busy} className="h-14 w-full rounded-2xl text-base">
             {busy ? "Signing in…" : "Sign in"}
           </Button>
+
+          {unconfirmedHint && (
+            <div className="rounded-2xl bg-card p-4 text-sm text-muted-foreground">
+              <p>
+                If you just created this account, tap the confirmation link we emailed you first —
+                unconfirmed accounts can't sign in yet.
+              </p>
+              <button
+                type="button"
+                onClick={resendConfirmation}
+                disabled={cooldown > 0}
+                className="mt-2 min-h-11 text-sm font-bold text-primary disabled:text-muted-foreground"
+              >
+                {cooldown > 0 ? `Resend link in ${cooldown}s` : "Resend confirmation link"}
+              </button>
+            </div>
+          )}
 
           <div className="flex flex-col gap-1 pt-2">
             <button
