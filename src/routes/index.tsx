@@ -17,7 +17,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Organize an event, share one link to attendees, find the dates that work, lock it in. No account or calendar syncing needed.",
+          "Organize an event, share one link to attendees, find the dates that work, lock it in. No calendar syncing needed.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
