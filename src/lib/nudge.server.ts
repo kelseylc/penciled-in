@@ -23,11 +23,50 @@ export function nudgeMessage(projectName: string, waiting: string[], link: strin
   return `Still waiting on ${listNames(waiting)} for ${projectName} — takes 30 seconds, no signup: ${link}`;
 }
 
+/**
+ * Dark-mode-safe nudge email. Inline styles only, table-based bulletproof
+ * button, light color-scheme meta pair, no pure white/black, and the link
+ * repeated as plain selectable text. See email-templates/auth/README.md.
+ */
+function nudgeHtml(name: string, projectName: string, link: string): string {
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+</head>
+<body style="margin:0;padding:0;background-color:#FAF7F2;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FAF7F2" style="background-color:#FAF7F2;">
+<tr><td align="center" style="padding:32px 16px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFDF9" style="max-width:480px;background-color:#FFFDF9;border-radius:16px;">
+<tr><td style="padding:32px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif;color:#2B2622;">
+  <p style="margin:0 0 8px;font-size:18px;font-weight:600;color:#2B2622;">Hi ${name}, we still need your times</p>
+  <p style="margin:0 0 24px;font-size:15px;line-height:22px;color:#5C5349;">${projectName} is waiting on you. It takes about 30 seconds and there's no signup.</p>
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td align="center" bgcolor="#C4633F" style="background-color:#C4633F;border-radius:12px;">
+      <a href="${link}" style="display:inline-block;padding:16px 32px;font-family:-apple-system,BlinkMacSystemFont,Helvetica,sans-serif;font-size:16px;font-weight:600;color:#FFFDF9;text-decoration:none;border-radius:12px;">Give my times</a>
+    </td>
+  </tr>
+  </table>
+  <p style="margin:16px 0 24px;font-size:13px;line-height:20px;color:#8A8079;">Or paste this into your browser:<br>${link}</p>
+  <p style="margin:0;font-size:13px;line-height:20px;color:#8A8079;">— Penciled.in</p>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+}
+
 async function sendResend(
   apiKey: string,
   to: string,
   subject: string,
   text: string,
+  html: string,
 ): Promise<boolean> {
   try {
     const res = await fetch("https://api.resend.com/emails", {
@@ -40,7 +79,9 @@ async function sendResend(
         from: "Penciled.in <onboarding@resend.dev>",
         to: [to],
         subject,
+        // multipart: real text/plain alternative alongside the HTML part
         text,
+        html,
       }),
     });
     return res.ok;
@@ -48,6 +89,7 @@ async function sendResend(
     return false;
   }
 }
+
 
 /**
  * Builds (and optionally emails) a nudge for everyone who hasn't answered yet.
