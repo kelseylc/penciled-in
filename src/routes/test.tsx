@@ -8,6 +8,7 @@ import { AppBar } from "@/components/AppBar";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { writeGuestToken } from "@/lib/guest-token";
 import { enterTestMode, type TestModeSeed } from "@/lib/testmode.functions";
 
 export const Route = createFileRoute("/test")({
@@ -76,7 +77,7 @@ function TestModePage() {
       // Seed guest tokens so the respond screens skip the "who are you" step.
       for (const p of data.projects) {
         const first = p.participants[0];
-        if (first) window.localStorage.setItem(`aih:token:${p.slug}`, first.token);
+        if (first) writeGuestToken(p.slug, first.token);
       }
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       return data;
@@ -110,9 +111,19 @@ function TestModePage() {
           {run.isPending ? "Setting up…" : seed ? "Reset demo data" : "Enter test mode"}
         </Button>
         {session && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Signed in as {session.user.email}
-          </p>
+          <div className="mt-2 flex items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">Signed in as {session.user.email}</p>
+            <button
+              type="button"
+              className="min-h-11 text-xs font-bold text-primary"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                toast.success("Signed out — signed-out screens are now auditable");
+              }}
+            >
+              Sign out
+            </button>
+          </div>
         )}
 
         {seed && (
@@ -128,8 +139,17 @@ function TestModePage() {
                 label="Review time options"
                 hint="Jumps to Step 7 with a prefilled plan — edit, remove, add slots"
               />
-              <Row href="/home" label="Your sessions" hint="Upcoming occurrences, at-risk banner" />
-              <Row href="/auth" label="Sign in" hint="Email code sign-in" />
+              <Row href="/home" label="My events" hint="Next session, at-risk banner, empty state" />
+              <Row href="/groups" label="My groups" hint="Saved groups list + create" />
+            </section>
+
+            <section className="space-y-2">
+              <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
+                Accounts
+              </h2>
+              <Row href="/auth" label="Sign in" hint="Email + password" />
+              <Row href="/auth?mode=signup" label="Create account" hint="Ends on confirm-email screen" />
+              <Row href="/auth?mode=forgot" label="Forgot password" hint="Recovery link email" />
             </section>
 
             <section className="space-y-2">

@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { readGuestToken, writeGuestToken } from "@/lib/guest-token";
 import { getOccurrenceGuest, submitOccurrenceRsvp } from "@/lib/occurrences.functions";
 
 export const Route = createFileRoute("/o/$id")({
@@ -76,7 +77,7 @@ function OccurrencePage() {
 
   useEffect(() => {
     if (token || !data) return;
-    const stored = window.localStorage.getItem(`aih:token:${data.project.slug}`);
+    const stored = readGuestToken(data.project.slug);
     if (stored) setToken(stored);
   }, [data, token]);
 
@@ -98,7 +99,7 @@ function OccurrencePage() {
     onSuccess: (res, state) => {
       if (res.token && data) {
         setToken(res.token);
-        window.localStorage.setItem(`aih:token:${data.project.slug}`, res.token);
+        writeGuestToken(data.project.slug, res.token);
       }
       setSubmitted(state);
       query.refetch();

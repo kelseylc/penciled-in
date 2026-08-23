@@ -30,6 +30,11 @@ export const Route = createFileRoute("/auth")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  // ?mode=signup|forgot deep-links a specific screen (used by /test auditing).
+  validateSearch: (search: Record<string, unknown>): { mode?: "signup" | "forgot" } => {
+    const m = search["mode"];
+    return m === "signup" || m === "forgot" ? { mode: m } : {};
+  },
   component: AuthPage,
 });
 
@@ -57,7 +62,8 @@ function AuthPage() {
   const { session, loading } = useAuth();
   const claim = useServerFn(claimParticipants);
 
-  const [mode, setMode] = useState<Mode>("login");
+  const { mode: modeParam } = Route.useSearch() as { mode?: Mode };
+  const [mode, setMode] = useState<Mode>(modeParam ?? "login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
