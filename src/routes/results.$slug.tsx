@@ -162,19 +162,12 @@ function ResultsPage() {
     );
   }, [data, tz]);
 
-  if (loading) return <Shell>Loading…</Shell>;
-  if (!session)
-    return (
-      <Shell>
-        <p className="text-muted-foreground">Sign in as the organizer to see results.</p>
-        <Link to="/auth" className="mt-4 inline-block underline">
-          Sign in
-        </Link>
-      </Shell>
-    );
   if (query.isLoading) return <Shell>Crunching answers…</Shell>;
   if (query.error || !data)
     return <Shell>{(query.error as Error)?.message ?? "Couldn't load this plan."}</Shell>;
+
+  // Reads are open to anyone with the link; only deciding needs the organizer.
+  const canDecide = !!session;
 
   const waiting = data.participants.filter((p) => !p.responded).map((p) => p.display_name);
   const total = data.participants.length;
