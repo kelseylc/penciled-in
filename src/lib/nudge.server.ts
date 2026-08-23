@@ -136,6 +136,7 @@ export async function nudgeProject(slug: string, origin: string): Promise<NudgeR
         to,
         `Quick one: ${project.name}`,
         `Hi ${p.display_name},\n\nWe still need your times for ${project.name}. It takes about 30 seconds and there's no signup:\n\n${personal}\n\n— Penciled.in`,
+        nudgeHtml(p.display_name, project.name, personal),
       );
       if (ok) emailed += 1;
     }
