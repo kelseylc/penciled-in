@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CalendarCheck, Clock, Users } from "lucide-react";
 
+import { AppBar } from "@/components/AppBar";
 import { PlanPrompt } from "@/components/PlanPrompt";
 
 
@@ -28,7 +29,8 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 py-10">
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-10 pt-2">
+      <AppBar back={false} />
       <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
         Penciled.in
       </p>
@@ -71,18 +73,20 @@ function Index() {
         >
           Create using template
         </Link>
-        <Link
-          to="/home"
-          className="mt-3 flex min-h-11 w-full items-center justify-center rounded-2xl border border-border text-sm font-semibold"
-        >
-          Your upcoming sessions
-        </Link>
-        <Link
-          to="/auth"
-          className="mt-3 flex min-h-11 w-full items-center justify-center text-sm text-muted-foreground underline underline-offset-4"
-        >
-          Organizer sign in
-        </Link>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <Link
+            to="/home"
+            className="flex min-h-12 items-center justify-center rounded-2xl border border-border text-sm font-semibold"
+          >
+            Your events
+          </Link>
+          <Link
+            to="/groups"
+            className="flex min-h-12 items-center justify-center rounded-2xl border border-border text-sm font-semibold"
+          >
+            My groups
+          </Link>
+        </div>
       </div>
     </main>
   );
