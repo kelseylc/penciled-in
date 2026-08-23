@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { claimParticipants } from "@/lib/claim.functions";
+import { signUpWithEmail } from "@/lib/auth-signup";
+import { storedGuestTokens } from "@/lib/guest-token";
 import { readAuthErrorFromUrl, safeRedirect, type AuthLinkError } from "@/lib/auth-links";
 
 export const Route = createFileRoute("/auth")({
@@ -46,18 +48,6 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
-/** Every guest token this browser has collected, so we can claim them on sign-in. */
-export function storedGuestTokens(): string[] {
-  const tokens: string[] = [];
-  for (let i = 0; i < window.localStorage.length; i += 1) {
-    const key = window.localStorage.key(i);
-    if (!key || !key.startsWith("aih.token.")) continue;
-    const value = window.localStorage.getItem(key);
-    if (value && /^[a-f0-9]{16,80}$/i.test(value)) tokens.push(value);
-  }
-  return tokens;
-}
-
 /** Email is the only login identifier. Names collide; phone needs SMS. */
 const emailSchema = z.string().trim().email("That doesn't look like an email").max(255);
 const passwordSchema = z.string().min(8, "Passwords need at least 8 characters").max(200);
@@ -69,7 +59,7 @@ const displayNameSchema = z.string().trim().min(1, "Add a name your group will r
  */
 let pendingLinkError = readAuthErrorFromUrl();
 
-type Mode = "login" | "signup" | "forgot" | "forgot-sent" | "reset" | "verify-email";
+type Mode = "login" | "signup" | "forgot" | "forgot-sent" | "verify-email";
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -86,15 +76,13 @@ function AuthPage() {
   const [displayName, setDisplayName] = useState("");
   const [busy, setBusy] = useState(false);
   const [cooldown, setCooldown] = useState(0);
-  const [settingPassword, setSettingPassword] = useState(false);
   const [unconfirmedHint, setUnconfirmedHint] = useState(false);
   const [existingAccount, setExistingAccount] = useState(false);
   const [linkError, setLinkError] = useState<AuthLinkError | null>(null);
 
-  // Claim guest history and route onward once signed in — unless we're mid
-  // password reset, in which case stay on the reset form.
+  // Claim guest history and route onward once signed in.
   useEffect(() => {
-    if (loading || !session || settingPassword) return;
+    if (loading || !session) return;
     const tokens = storedGuestTokens();
     claim({ data: { tokens } })
       .then((r) => {
@@ -103,7 +91,7 @@ function AuthPage() {
       })
       .catch(() => void 0)
       .finally(() => navigate({ href: redirect ?? "/home", replace: true }));
-  }, [loading, session, navigate, claim, settingPassword, redirect]);
+  }, [loading, session, navigate, claim, redirect]);
 
   // Surfaced from a state the server never rendered, so hydration still matches.
   useEffect(() => {
@@ -117,18 +105,6 @@ function AuthPage() {
     const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [cooldown]);
-
-  // Supabase fires PASSWORD_RECOVERY when the user lands back here after
-  // tapping the "reset password" link in their email. Show the reset form.
-  useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
-        setSettingPassword(true);
-        setMode("reset");
-      }
-    });
-    return () => sub.subscription.unsubscribe();
-  }, []);
 
   /** Any edit to the credentials invalidates the hints about the last attempt. */
   function clearHints() {
@@ -187,20 +163,13 @@ function AuthPage() {
 
     setBusy(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const outcome = await signUpWithEmail({
         email: address,
         password: pw.data,
-        options: {
-          data: { display_name: name.data },
-          emailRedirectTo: `${window.location.origin}/auth`,
-        },
+        displayName: name.data,
       });
-      if (error) throw error;
-      if (data.session) return; // Auto-confirm on: the listener takes it from here.
-      // Supabase answers an already-registered address with a success payload
-      // carrying no identities, and sends no email — so waiting on the confirm
-      // screen would be waiting forever. Send them to sign in instead.
-      if (data.user && (data.user.identities?.length ?? 0) === 0) {
+      if (outcome.status === "signed-in") return; // The listener takes it from here.
+      if (outcome.status === "already-registered") {
         setPassword("");
         setExistingAccount(true);
         setMode("login");
@@ -270,29 +239,8 @@ function AuthPage() {
     }
   }
 
-  async function submitNewPassword(e: React.FormEvent) {
-    e.preventDefault();
-    const pw = passwordSchema.safeParse(password);
-    if (!pw.success) {
-      toast.error(pw.error.issues[0]!.message);
-      return;
-    }
-    setBusy(true);
-    try {
-      const { error } = await supabase.auth.updateUser({ password: pw.data });
-      if (error) throw error;
-      toast.success("Password updated");
-      setSettingPassword(false); // Releases the redirect to /home.
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't update your password");
-    } finally {
-      setBusy(false);
-    }
-  }
-
   function backToLogin() {
     setMode("login");
-    setSettingPassword(false);
     setPassword("");
     clearHints();
   }
@@ -304,11 +252,9 @@ function AuthPage() {
         ? "Check your email"
         : mode === "verify-email"
           ? "Confirm your email"
-          : mode === "reset"
-            ? "Set a new password"
-            : mode === "signup"
-              ? "Create your organizer account"
-              : "Welcome back";
+          : mode === "signup"
+            ? "Create your organizer account"
+            : "Welcome back";
 
   const sub =
     mode === "forgot"
@@ -317,11 +263,9 @@ function AuthPage() {
         ? `We sent a password reset link to ${email.trim()}. Tap it to choose a new password.`
         : mode === "verify-email"
           ? `We sent a confirmation email to ${email.trim()}. Tap the button in it to activate your account.`
-          : mode === "reset"
-            ? "At least 8 characters. No symbol gymnastics required."
-            : mode === "signup"
-              ? "Organizers need an account. Responding to a plan never does."
-              : "Sign in to see your plans. Responding to a plan never needs an account.";
+          : mode === "signup"
+            ? "Organizers need an account. Responding to a plan never does."
+            : "Sign in to see your plans. Responding to a plan never needs an account.";
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-5 pb-10 pt-2 text-base">
@@ -566,28 +510,6 @@ function AuthPage() {
             Back to sign in
           </Button>
         </div>
-      )}
-
-      {mode === "reset" && (
-        <form onSubmit={submitNewPassword} className="mt-8 space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="new-password">New password</Label>
-            <Input
-              id="new-password"
-              type="password"
-              required
-              minLength={8}
-              autoComplete="new-password"
-              className="h-14 rounded-xl text-base"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="At least 8 characters"
-            />
-          </div>
-          <Button type="submit" disabled={busy} className="h-14 w-full rounded-2xl text-base">
-            {busy ? "Saving…" : "Save password"}
-          </Button>
-        </form>
       )}
     </main>
   );

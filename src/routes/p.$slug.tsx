@@ -508,7 +508,7 @@ function RespondPage() {
         )}
       </div>
 
-      <AccountUpsellCard variant="respondent" />
+      <AccountUpsellCard variant="respondent" defaultName={name} />
 
       <button
         type="button"
