@@ -19,7 +19,13 @@ import { takeDraft } from "@/lib/plan-draft";
 import { createProject } from "@/lib/projects.functions";
 import { saveGroupFromProject } from "@/lib/groups.functions";
 
-import { effectiveDurationMinutes, generateCandidateSlots, MAX_SLOTS } from "@/lib/slots";
+import { SlotReview } from "@/components/SlotReview";
+import {
+  effectiveDurationMinutes,
+  generateCandidateSlots,
+  MAX_SLOTS,
+  type GeneratedSlot,
+} from "@/lib/slots";
 import {
   DAY_LABELS,
   describeDays,
@@ -64,7 +70,7 @@ type Person = {
 
 type GroupRow = { id: string; name: string };
 
-const STEPS = ["Template", "Name", "Dates", "People", "Quorum", "Deadline"] as const;
+const STEPS = ["Template", "Name", "Dates", "People", "Quorum", "Deadline", "Review"] as const;
 
 function NewProject() {
   const navigate = useNavigate();
@@ -98,6 +104,8 @@ function NewProject() {
   const [hasDeadline, setHasDeadline] = useState(true);
   const [deadline, setDeadline] = useState<Date>(addDays(new Date(), 5));
   const [busy, setBusy] = useState(false);
+  const [removedSlots, setRemovedSlots] = useState<string[]>([]);
+  const [extraSlots, setExtraSlots] = useState<GeneratedSlot[]>([]);
   const [draftNote, setDraftNote] = useState<{ summary: string; missing: string[] } | null>(null);
   const search = Route.useSearch();
 
@@ -180,6 +188,21 @@ function NewProject() {
     format(windowEnd, "yyyy-MM-dd"),
   ]);
 
+  const generationKey = generation
+    ? `${generation.slots.length}:${generation.slots[0]?.start_utc ?? ""}:${generation.slots[generation.slots.length - 1]?.start_utc ?? ""}`
+    : "";
+  useEffect(() => {
+    setRemovedSlots([]);
+    setExtraSlots([]);
+  }, [generationKey]);
+
+  const finalSlots = useMemo(() => {
+    const gone = new Set(removedSlots);
+    return [...(generation?.slots ?? []).filter((s) => !gone.has(s.start_utc)), ...extraSlots].sort(
+      (a, b) => a.start_utc.localeCompare(b.start_utc),
+    );
+  }, [generation, removedSlots, extraSlots]);
+
   function patch(next: Partial<EventConstraints>) {
     setConstraints((c) => ({ ...c, ...next }));
   }
@@ -232,6 +255,7 @@ function NewProject() {
     people.length > 0,
     quorum >= 1,
     true,
+    finalSlots.length > 0,
   ][step];
 
   async function submit() {
@@ -257,7 +281,7 @@ function NewProject() {
             is_required: p.is_required,
             profile_id: p.profile_id,
           })),
-          slots: generation.slots,
+          slots: finalSlots,
         },
       });
       if (saveAsGroup && !groupId && saveGroupName.trim() && session) {
@@ -734,8 +758,30 @@ function NewProject() {
               </div>
             )}
             <p className="mt-4 text-xs text-muted-foreground">
-              {generation?.slots.length ?? 0} time options will go out to {people.length} people.
+              {finalSlots.length} time options will go out to {people.length} people.
             </p>
+          </section>
+        )}
+
+        {step === 6 && (
+          <section>
+            <h1 className="text-2xl font-black tracking-tight">Review the options</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              This is exactly what your {people.length} invitees will see. Remove anything that
+              doesn't work, or add a time by hand. Shown in your local time ({tz}).
+            </p>
+            <SlotReview
+              slots={generation?.slots ?? []}
+              timezone={tz}
+              durationMinutes={
+                constraints.durationMinutes ??
+                Math.max(30, Math.round((constraints.endBy - constraints.startAfter) * 60))
+              }
+              removed={removedSlots}
+              onRemovedChange={setRemovedSlots}
+              extra={extraSlots}
+              onExtraChange={setExtraSlots}
+            />
           </section>
         )}
       </div>
