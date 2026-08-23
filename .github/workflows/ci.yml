@@ -25,6 +25,9 @@ jobs:
       # resolving something different from what everyone else is running.
       - run: bun install --frozen-lockfile
 
+      # Warnings stay visible without failing the run; errors are the gate.
+      - run: bun run lint
+
       - run: bun run typecheck
 
       - run: bun run test

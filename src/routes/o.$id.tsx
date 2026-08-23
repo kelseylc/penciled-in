@@ -135,7 +135,9 @@ function OccurrencePage() {
                 ? "Noted — running late."
                 : "Got it, you're out."}
           </h1>
-          <p className="mt-2 text-muted-foreground">{formatWhen(data.occurrence.scheduled_start_utc, tz)}</p>
+          <p className="mt-2 text-muted-foreground">
+            {formatWhen(data.occurrence.scheduled_start_utc, tz)}
+          </p>
           <p className="mt-4 text-sm">
             {data.tally.attending} of {data.tally.total} confirmed
             {data.tally.noResponse > 0 ? ` · ${data.tally.noResponse} still to answer` : ""}.
@@ -275,5 +277,7 @@ function RsvpButton({
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
-  return <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 py-8">{children}</main>;
+  return (
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 py-8">{children}</main>
+  );
 }

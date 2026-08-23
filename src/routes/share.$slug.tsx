@@ -88,19 +88,12 @@ function SharePage() {
         <p className="break-all text-sm font-medium">{link}</p>
       </div>
 
-      <Button
-        className="mt-4 h-14 w-full text-base font-bold"
-        onClick={() => copy(link, "link")}
-      >
+      <Button className="mt-4 h-14 w-full text-base font-bold" onClick={() => copy(link, "link")}>
         {copied === "link" ? <Check className="size-5" /> : <Copy className="size-5" />}
         Copy link
       </Button>
 
-      <Button
-        variant="secondary"
-        className="mt-3 h-14 w-full text-base font-bold"
-        onClick={share}
-      >
+      <Button variant="secondary" className="mt-3 h-14 w-full text-base font-bold" onClick={share}>
         <Share2 className="size-5" />
         Share…
       </Button>

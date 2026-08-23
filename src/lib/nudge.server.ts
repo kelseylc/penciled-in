@@ -90,7 +90,6 @@ async function sendResend(
   }
 }
 
-
 /**
  * Builds (and optionally emails) a nudge for everyone who hasn't answered yet.
  */

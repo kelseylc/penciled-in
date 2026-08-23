@@ -33,7 +33,10 @@ export async function loadOrganizerOccurrences(
       .select("id, project_id, display_name, is_required")
       .in("project_id", projectIds)
       .order("display_name"),
-    sb.from("projects").select("slug, repoll_for_occurrence_id").in("parent_project_id", projectIds),
+    sb
+      .from("projects")
+      .select("slug, repoll_for_occurrence_id")
+      .in("parent_project_id", projectIds),
   ]);
 
   const occIds = (occurrences ?? []).map((o) => o.id);

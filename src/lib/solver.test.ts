@@ -74,10 +74,7 @@ describe("rankSlots", () => {
 describe("enumerateCadences", () => {
   it("projects 12 weekly occurrences and reports the tradeoff in words", () => {
     // Sundays 14:00 UTC
-    const slots = [
-      slot("s1", "2026-09-06T14:00:00Z"),
-      slot("s2", "2026-09-13T14:00:00Z"),
-    ];
+    const slots = [slot("s1", "2026-09-06T14:00:00Z"), slot("s2", "2026-09-13T14:00:00Z")];
     const responses = {
       s1: { a: "yes", b: "yes", c: "yes", d: "no" },
       s2: { a: "yes", b: "yes", c: "yes", d: "no" },

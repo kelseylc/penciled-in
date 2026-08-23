@@ -48,9 +48,7 @@ export const getLockedPlan = createServerFn({ method: "POST" })
 
     const { data: project } = await supabaseAdmin
       .from("projects")
-      .select(
-        "id, name, slug, status, mode, cadence, duration_minutes, quorum_min, template",
-      )
+      .select("id, name, slug, status, mode, cadence, duration_minutes, quorum_min, template")
       .eq("slug", data.slug)
       .maybeSingle();
     if (!project) throw new Error("This plan link isn't valid anymore.");

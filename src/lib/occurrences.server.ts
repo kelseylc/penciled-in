@@ -6,12 +6,7 @@ import { generateCandidateSlots, templateConstraints } from "@/lib/slots";
 import { TEMPLATES } from "@/lib/templates";
 
 export type RsvpState = "in" | "out" | "late";
-export type OccurrenceStatus =
-  | "pending"
-  | "confirmed"
-  | "at_risk"
-  | "repolling"
-  | "cancelled";
+export type OccurrenceStatus = "pending" | "confirmed" | "at_risk" | "repolling" | "cancelled";
 
 export interface EvaluationResult {
   status: OccurrenceStatus;
@@ -45,11 +40,7 @@ export async function evaluateOccurrence(occurrenceId: string): Promise<Evaluati
   if (!occ) throw new Error("That session isn't available anymore.");
 
   const [{ data: project }, { data: participants }, { data: rsvps }] = await Promise.all([
-    supabaseAdmin
-      .from("projects")
-      .select("id, quorum_min")
-      .eq("id", occ.project_id)
-      .maybeSingle(),
+    supabaseAdmin.from("projects").select("id, quorum_min").eq("id", occ.project_id).maybeSingle(),
     supabaseAdmin
       .from("participants")
       .select("id, display_name, is_required")
@@ -149,8 +140,7 @@ export async function createRepollProject(occurrenceId: string, organizerId: str
   const windowEnd = format(addDays(localDate, 7), "yyyy-MM-dd");
 
   const template =
-    TEMPLATES.find((t) => t.id === parent.template) ??
-    TEMPLATES[TEMPLATES.length - 1]!;
+    TEMPLATES.find((t) => t.id === parent.template) ?? TEMPLATES[TEMPLATES.length - 1]!;
 
   const { slots } = generateCandidateSlots({
     constraints: templateConstraints(template, parent.duration_minutes),
@@ -206,11 +196,7 @@ export async function createRepollProject(occurrenceId: string, organizerId: str
 }
 
 /** Move a single occurrence to the re-polled time. Cadence untouched. */
-export async function applyRepollResult(
-  occurrenceId: string,
-  startUtc: string,
-  endUtc: string,
-) {
+export async function applyRepollResult(occurrenceId: string, startUtc: string, endUtc: string) {
   await supabaseAdmin
     .from("occurrences")
     .update({

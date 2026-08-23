@@ -16,7 +16,12 @@ export interface OccurrenceGuestBundle {
     total: number;
   };
   project: { name: string; slug: string; quorum_min: number };
-  me: { id: string; display_name: string; state: "in" | "out" | "late" | null; note: string | null } | null;
+  me: {
+    id: string;
+    display_name: string;
+    state: "in" | "out" | "late" | null;
+    note: string | null;
+  } | null;
   tally: { attending: number; out: number; noResponse: number; total: number };
 }
 
