@@ -2,7 +2,7 @@ import { addDays, format } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { generateCandidateSlots } from "@/lib/slots";
+import { generateCandidateSlots, templateConstraints } from "@/lib/slots";
 import { TEMPLATES } from "@/lib/templates";
 
 export type RsvpState = "in" | "out" | "late";
@@ -153,12 +153,10 @@ export async function createRepollProject(occurrenceId: string, organizerId: str
     TEMPLATES[TEMPLATES.length - 1]!;
 
   const { slots } = generateCandidateSlots({
-    template,
-    durationMinutes: parent.duration_minutes,
+    constraints: templateConstraints(template, parent.duration_minutes),
     windowStart,
     windowEnd,
     timezone: tz,
-    granularity: "daypart",
   });
   if (slots.length === 0) throw new Error("Couldn't build any times for that week.");
 

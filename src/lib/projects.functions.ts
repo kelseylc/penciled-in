@@ -13,7 +13,7 @@ const participantSchema = z.object({
 const createProjectSchema = z.object({
   name: z.string().min(1).max(120),
   template: z.string().min(1).max(32),
-  duration_minutes: z.number().int().min(15).max(720),
+  duration_minutes: z.number().int().min(15).max(10080),
   mode: z.enum(["one_off", "recurring"]),
   cadence: z.enum(["weekly", "biweekly", "monthly", "quarterly"]).nullable(),
   window_mode: z.enum(["rolling", "custom"]),
