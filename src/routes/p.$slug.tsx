@@ -90,6 +90,9 @@ function RespondPage() {
   const [changingTz, setChangingTz] = useState(false);
   const [upsellEmail, setUpsellEmail] = useState("");
   const [upsellOpen, setUpsellOpen] = useState(false);
+  const [upsellSent, setUpsellSent] = useState(false);
+  const [upsellResetKey, setUpsellResetKey] = useState(0);
+  const [upsellCooldown, setUpsellCooldown] = useState(0);
 
   useEffect(() => {
     setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
@@ -231,17 +234,34 @@ function RespondPage() {
     setAnswers(next);
   }
 
-  async function sendMagicLink() {
+  async function sendUpsellCode() {
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email: upsellEmail.trim(),
-        options: { emailRedirectTo: `${window.location.origin}/new` },
+        options: { shouldCreateUser: true },
       });
       if (error) throw error;
-      toast.success("Magic link sent — tap it to save your usual availability.");
+      setUpsellSent(true);
+      setUpsellCooldown(30);
+      setUpsellResetKey((k) => k + 1);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't send the code");
+    }
+  }
+
+  async function verifyUpsellCode(code: string) {
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email: upsellEmail.trim(),
+        token: code,
+        type: "email",
+      });
+      if (error) throw error;
+      toast.success("Signed in — your usual availability is saved to this account.");
       setUpsellOpen(false);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't send the link");
+      toast.error(e instanceof Error ? e.message : "That code didn't work");
+      setUpsellResetKey((k) => k + 1);
     }
   }
 
@@ -519,24 +539,41 @@ function RespondPage() {
       <div className="mt-6 rounded-2xl bg-secondary p-4">
         {upsellOpen ? (
           <div className="space-y-3">
-            <Label htmlFor="upsell-email" className="text-sm font-bold">
-              Where should we send the link?
-            </Label>
-            <Input
-              id="upsell-email"
-              type="email"
-              className="h-12"
-              placeholder="you@example.com"
-              value={upsellEmail}
-              onChange={(e) => setUpsellEmail(e.target.value)}
-            />
-            <Button
-              className="h-12 w-full font-bold"
-              disabled={!upsellEmail.trim()}
-              onClick={sendMagicLink}
-            >
-              Send magic link
-            </Button>
+            {upsellSent ? (
+              <>
+                <p className="text-sm font-bold">Enter the 6-digit code we emailed you.</p>
+                <OtpInput onComplete={verifyUpsellCode} resetKey={upsellResetKey} />
+                <button
+                  type="button"
+                  disabled={upsellCooldown > 0}
+                  onClick={sendUpsellCode}
+                  className="min-h-11 w-full text-sm font-bold text-primary disabled:text-muted-foreground"
+                >
+                  {upsellCooldown > 0 ? `Resend code in ${upsellCooldown}s` : "Resend code"}
+                </button>
+              </>
+            ) : (
+              <>
+                <Label htmlFor="upsell-email" className="text-sm font-bold">
+                  Where should we send your code?
+                </Label>
+                <Input
+                  id="upsell-email"
+                  type="email"
+                  className="h-12"
+                  placeholder="you@example.com"
+                  value={upsellEmail}
+                  onChange={(e) => setUpsellEmail(e.target.value)}
+                />
+                <Button
+                  className="h-12 w-full font-bold"
+                  disabled={!upsellEmail.trim()}
+                  onClick={sendUpsellCode}
+                >
+                  Send my code
+                </Button>
+              </>
+            )}
           </div>
         ) : (
           <button
