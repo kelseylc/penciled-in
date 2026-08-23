@@ -281,7 +281,7 @@ function NewProject() {
             is_required: p.is_required,
             profile_id: p.profile_id,
           })),
-          slots: generation.slots,
+          slots: finalSlots,
         },
       });
       if (saveAsGroup && !groupId && saveGroupName.trim() && session) {
