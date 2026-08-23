@@ -6,9 +6,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { AppBar } from "@/components/AppBar";
+import { RequireAuth } from "@/components/RequireAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/hooks/useAuth";
 import { createGroup, listMyGroups, type MyGroup } from "@/lib/groups.functions";
 
 export const Route = createFileRoute("/groups")({
@@ -29,11 +29,18 @@ export const Route = createFileRoute("/groups")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: GroupsPage,
+  component: GroupsRoute,
 });
 
+function GroupsRoute() {
+  return (
+    <RequireAuth>
+      <GroupsPage />
+    </RequireAuth>
+  );
+}
+
 function GroupsPage() {
-  const { session, loading } = useAuth();
   const qc = useQueryClient();
   const listFn = useServerFn(listMyGroups);
   const createFn = useServerFn(createGroup);
@@ -43,7 +50,6 @@ function GroupsPage() {
   const query = useQuery<MyGroup[]>({
     queryKey: ["my-groups"],
     queryFn: () => listFn({ data: undefined }),
-    enabled: !!session,
   });
 
   const create = useMutation({
@@ -56,27 +62,6 @@ function GroupsPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
-
-  if (loading) return <main className="mx-auto w-full max-w-md px-5 py-8">One sec…</main>;
-
-  if (!session)
-    return (
-      <main className="mx-auto w-full max-w-md px-5 py-8">
-        <AppBar />
-        <h1 className="text-2xl font-black tracking-tight">My groups</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Saved groups live with your account, so sign in to see and manage them. Responding to a
-          plan never needs an account.
-        </p>
-        <Link
-          to="/auth"
-          search={{ redirect: "/groups" }}
-          className="mt-6 flex h-14 w-full items-center justify-center rounded-2xl bg-primary text-base font-bold text-primary-foreground"
-        >
-          Sign in
-        </Link>
-      </main>
-    );
 
   const groups = query.data ?? [];
 

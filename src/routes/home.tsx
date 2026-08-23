@@ -1,4 +1,5 @@
 import { AppBar } from "@/components/AppBar";
+import { RequireAuth } from "@/components/RequireAuth";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -9,7 +10,6 @@ import { useMemo } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
 import {
   actOnOccurrence,
   getOrganizerOccurrences,
@@ -35,7 +35,7 @@ export const Route = createFileRoute("/home")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: HomePage,
+  component: HomeRoute,
 });
 
 function localTz() {
@@ -60,8 +60,15 @@ const CHIP: Record<string, { label: string; className: string }> = {
   cancelled: { label: "Cancelled", className: "bg-muted text-muted-foreground border-border" },
 };
 
+function HomeRoute() {
+  return (
+    <RequireAuth>
+      <HomePage />
+    </RequireAuth>
+  );
+}
+
 function HomePage() {
-  const { session, loading } = useAuth();
   const tz = useMemo(localTz, []);
   const qc = useQueryClient();
   const fetchOccurrences = useServerFn(getOrganizerOccurrences);
@@ -70,7 +77,6 @@ function HomePage() {
   const query = useQuery({
     queryKey: ["organizer-occurrences"],
     queryFn: () => fetchOccurrences({ data: { slug: null } }),
-    enabled: !!session,
   });
 
   const act = useMutation({
@@ -89,16 +95,6 @@ function HomePage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  if (loading) return <Shell>Loading…</Shell>;
-  if (!session)
-    return (
-      <Shell>
-        <p className="text-muted-foreground">Sign in to see your group's sessions.</p>
-        <Link to="/auth" search={{ redirect: "/home" }} className="mt-4 inline-block underline">
-          Sign in
-        </Link>
-      </Shell>
-    );
   if (query.isLoading) return <Shell>Loading your sessions…</Shell>;
 
   const all = [...(query.data ?? [])].sort(

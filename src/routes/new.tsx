@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { takeDraft } from "@/lib/plan-draft";
@@ -59,7 +60,7 @@ export const Route = createFileRoute("/new")({
       },
     ],
   }),
-  component: NewProject,
+  component: NewRoute,
 });
 
 type Person = {
@@ -74,9 +75,17 @@ type GroupRow = { id: string; name: string };
 
 const STEPS = ["Template", "Name", "Dates", "People", "Quorum", "Deadline", "Review"] as const;
 
+function NewRoute() {
+  return (
+    <RequireAuth>
+      <NewProject />
+    </RequireAuth>
+  );
+}
+
 function NewProject() {
   const navigate = useNavigate();
-  const { session, loading } = useAuth();
+  const { session } = useAuth();
   const create = useServerFn(createProject);
   const saveGroup = useServerFn(saveGroupFromProject);
   const tz = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", []);
@@ -168,11 +177,6 @@ function NewProject() {
     setStep(STEPS.length - 1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search.demo]);
-
-  useEffect(() => {
-    if (!loading && !session)
-      navigate({ to: "/auth", search: { redirect: "/new" }, replace: true });
-  }, [loading, session, navigate]);
 
   useEffect(() => {
     if (!session) return;
@@ -694,14 +698,11 @@ function NewProject() {
                   <div className="min-w-0">
                     <p className="text-sm font-bold">Save these people as a group</p>
                     <p className="text-xs text-muted-foreground">
-                      {session
-                        ? "Reuse this crew for future plans and hand out co-organizer access."
-                        : "Sign in first to keep this crew for next time."}
+                      Reuse this crew for future plans and hand out co-organizer access.
                     </p>
                   </div>
                   <Switch
                     checked={saveAsGroup}
-                    disabled={!session}
                     onCheckedChange={(c) => {
                       setSaveAsGroup(c);
                       if (c && !saveGroupName)
