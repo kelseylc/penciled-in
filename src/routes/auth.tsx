@@ -131,9 +131,15 @@ function AuthPage() {
     const address = parseEmail();
     if (!address) return;
     const name = displayNameSchema.safeParse(displayName);
-    if (!name.success) return toast.error(name.error.issues[0]!.message);
+    if (!name.success) {
+      toast.error(name.error.issues[0]!.message);
+      return;
+    }
     const pw = passwordSchema.safeParse(password);
-    if (!pw.success) return toast.error(pw.error.issues[0]!.message);
+    if (!pw.success) {
+      toast.error(pw.error.issues[0]!.message);
+      return;
+    }
 
     setBusy(true);
     try {
@@ -230,7 +236,10 @@ function AuthPage() {
   async function submitNewPassword(e: React.FormEvent) {
     e.preventDefault();
     const pw = passwordSchema.safeParse(password);
-    if (!pw.success) return toast.error(pw.error.issues[0]!.message);
+    if (!pw.success) {
+      toast.error(pw.error.issues[0]!.message);
+      return;
+    }
     setBusy(true);
     try {
       const { error } = await supabase.auth.updateUser({ password: pw.data });
