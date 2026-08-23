@@ -1,12 +1,15 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
+import { signUpWithEmail } from "@/lib/auth-signup";
 import { safeRedirect } from "@/lib/auth-links";
+import { claimParticipants } from "@/lib/claim.functions";
+import { storedGuestTokens } from "@/lib/guest-token";
 
 type Variant = "respondent" | "organizer";
 
@@ -19,16 +22,25 @@ const DISMISS_KEY = "penciled:upsell-dismissed";
  * Uses the same one-click email confirmation flow as the organizer sign-in
  * page — no codes to copy anywhere in the app.
  */
-export function AccountUpsellCard({ variant = "respondent" }: { variant?: Variant }) {
+export function AccountUpsellCard({
+  variant = "respondent",
+  defaultName,
+}: {
+  variant?: Variant;
+  /** The name they already gave as a guest, so their group still recognizes them. */
+  defaultName?: string;
+}) {
   const [dismissed, setDismissed] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [sent, setSent] = useState(false);
+  const [done, setDone] = useState(false);
   const [existingAccount, setExistingAccount] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [busy, setBusy] = useState(false);
   const here = useRouterState({ select: (s) => s.location.href });
   const backHere = safeRedirect(here);
+  const claim = useServerFn(claimParticipants);
 
   useEffect(() => {
     try {
@@ -60,18 +72,21 @@ export function AccountUpsellCard({ variant = "respondent" }: { variant?: Varian
     if (!address || password.length < 8) return;
     setBusy(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const outcome = await signUpWithEmail({
         email: address,
         password,
-        // Land the confirmation on /auth, not "/": that route is what claims
-        // this browser's guest answers, which is the whole point of the offer.
-        options: { emailRedirectTo: `${window.location.origin}/auth` },
+        ...(defaultName?.trim() ? { displayName: defaultName.trim() } : {}),
       });
-      if (error) throw error;
-      // An address that already has an account comes back as success with no
-      // identities and no email sent — the same dead end the sign-in page had.
-      if (data.user && (data.user.identities?.length ?? 0) === 0) {
+      if (outcome.status === "already-registered") {
         setExistingAccount(true);
+        return;
+      }
+      // No confirmation step for this project: there's no /auth round trip to
+      // claim the answers, so do it here rather than promise an email that
+      // will never arrive.
+      if (outcome.status === "signed-in") {
+        await claim({ data: { tokens: storedGuestTokens() } }).catch(() => void 0);
+        setDone(true);
         return;
       }
       setSent(true);
@@ -92,7 +107,14 @@ export function AccountUpsellCard({ variant = "respondent" }: { variant?: Varian
         hunting for the link in your group chat.
       </p>
 
-      {existingAccount ? (
+      {done ? (
+        <div className="mt-4 space-y-3">
+          <p className="text-sm font-semibold">You're all set</p>
+          <p className="text-sm text-muted-foreground">
+            Your answers are saved to this account. Next time we'll fill them in for you.
+          </p>
+        </div>
+      ) : existingAccount ? (
         <div className="mt-4 space-y-3">
           <p className="text-sm font-semibold">You already have an account</p>
           <p className="text-sm text-muted-foreground">

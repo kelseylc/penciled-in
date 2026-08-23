@@ -50,3 +50,20 @@ export function writeGuestToken(slug: string, token: string) {
     /* cookies blocked — localStorage is the fallback */
   }
 }
+
+/**
+ * Every guest token this browser has collected, so a new account can claim the
+ * answers behind them. Reads the localStorage layer only — the cookie layer is
+ * per-slug and can't be enumerated by prefix.
+ */
+export function storedGuestTokens(): string[] {
+  if (typeof window === "undefined") return [];
+  const tokens: string[] = [];
+  for (let i = 0; i < window.localStorage.length; i += 1) {
+    const stored = window.localStorage.key(i);
+    if (!stored || !stored.startsWith("aih.token.")) continue;
+    const value = window.localStorage.getItem(stored);
+    if (value && /^[a-f0-9]{16,80}$/i.test(value)) tokens.push(value);
+  }
+  return tokens;
+}
