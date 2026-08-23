@@ -166,8 +166,8 @@ export function AccountUpsellCard({ variant = "respondent" }: { variant?: Varian
             No thanks
           </button>
           <p className="text-xs text-muted-foreground">
-            {variant === "organizer" && password
-              ? "We'll email you a 6-digit code to confirm. Your password is saved for next time."
+            {variant === "organizer"
+              ? "Set a password so Face ID fills it next time, or leave it blank and we'll email a 6-digit code."
               : "We'll email you a 6-digit code. No password to make up."}
           </p>
         </div>
