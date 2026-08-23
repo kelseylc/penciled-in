@@ -1,4 +1,5 @@
 import { AppBar } from "@/components/AppBar";
+import { OtpInput } from "@/components/OtpInput";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
@@ -18,7 +19,7 @@ export const Route = createFileRoute("/auth")({
       {
         name: "description",
         content:
-          "Magic-link sign in for organizers. Responding to a plan never requires an account.",
+          "Sign in with a 6-digit code. Responding to a plan never requires an account.",
       },
       { property: "og:title", content: "Organizer sign in — Penciled.in" },
       {
@@ -50,6 +51,9 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
+  const [cooldown, setCooldown] = useState(0);
   const claim = useServerFn(claimParticipants);
 
   useEffect(() => {
@@ -63,16 +67,28 @@ function AuthPage() {
       .finally(() => navigate({ to: "/home" }));
   }, [loading, session, navigate, claim]);
 
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
+  async function sendCode(address: string) {
+    const { error } = await supabase.auth.signInWithOtp({
+      email: address,
+      options: { shouldCreateUser: true },
+    });
+    if (error) throw error;
+    setCooldown(30);
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: `${window.location.origin}/home` },
-      });
-      if (error) throw error;
+      await sendCode(email.trim());
       setSent(true);
+      setResetKey((k) => k + 1);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -80,16 +96,45 @@ function AuthPage() {
     }
   }
 
+  async function resend() {
+    if (cooldown > 0) return;
+    try {
+      await sendCode(email.trim());
+      setResetKey((k) => k + 1);
+      toast.success("New code sent");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't resend the code");
+    }
+  }
+
+  async function verify(code: string) {
+    setVerifying(true);
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email: email.trim(),
+        token: code,
+        type: "email",
+      });
+      if (error) throw error;
+      // The auth listener picks up the session and redirects to /home.
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "That code didn't work");
+      setResetKey((k) => k + 1);
+    } finally {
+      setVerifying(false);
+    }
+  }
+
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-5 pb-10 pt-2 text-base">
       <AppBar />
       <h1 className="text-3xl font-black tracking-tight">
-        {sent ? "Check your email" : "Just your email"}
+        {sent ? "Enter your code" : "Just your email"}
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">
         {sent
-          ? "We sent you a magic link. No password to forget, because you have enough to remember."
-          : "Organizers get a magic link — no passwords. Responding to a plan never needs an account."}
+          ? `We sent a 6-digit code to ${email.trim()}. It expires in 10 minutes.`
+          : "Organizers get a 6-digit code — no passwords, no links to chase. Responding to a plan never needs an account."}
       </p>
 
       {!sent && (
@@ -109,19 +154,31 @@ function AuthPage() {
             />
           </div>
           <Button type="submit" disabled={busy} className="h-14 w-full rounded-2xl text-base">
-            {busy ? "Sending…" : "Send my magic link"}
+            {busy ? "Sending…" : "Send my code"}
           </Button>
         </form>
       )}
 
       {sent && (
-        <Button
-          variant="secondary"
-          className="mt-8 h-14 w-full rounded-2xl text-base"
-          onClick={() => setSent(false)}
-        >
-          Use a different email
-        </Button>
+        <div className="mt-8 space-y-5">
+          <OtpInput onComplete={verify} disabled={verifying} resetKey={resetKey} />
+          {verifying && <p className="text-center text-sm text-muted-foreground">Checking…</p>}
+          <button
+            type="button"
+            onClick={resend}
+            disabled={cooldown > 0}
+            className="min-h-11 w-full text-sm font-bold text-primary disabled:text-muted-foreground"
+          >
+            {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
+          </button>
+          <Button
+            variant="secondary"
+            className="h-14 w-full rounded-2xl text-base"
+            onClick={() => setSent(false)}
+          >
+            Use a different email
+          </Button>
+        </div>
       )}
     </main>
   );
