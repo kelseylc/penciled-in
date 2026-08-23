@@ -150,6 +150,11 @@ function TestModePage() {
               <Row href="/auth" label="Sign in" hint="Email + password" />
               <Row href="/auth?mode=signup" label="Create account" hint="Ends on confirm-email screen" />
               <Row href="/auth?mode=forgot" label="Forgot password" hint="Recovery link email" />
+              <Row
+                href="/reset-password"
+                label="Set a new password"
+                hint="Where the recovery email link lands"
+              />
             </section>
 
             <section className="space-y-2">
