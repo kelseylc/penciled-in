@@ -758,8 +758,30 @@ function NewProject() {
               </div>
             )}
             <p className="mt-4 text-xs text-muted-foreground">
-              {generation?.slots.length ?? 0} time options will go out to {people.length} people.
+              {finalSlots.length} time options will go out to {people.length} people.
             </p>
+          </section>
+        )}
+
+        {step === 6 && (
+          <section>
+            <h1 className="text-2xl font-black tracking-tight">Review the options</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              This is exactly what your {people.length} invitees will see. Remove anything that
+              doesn't work, or add a time by hand. Shown in your local time ({tz}).
+            </p>
+            <SlotReview
+              slots={generation?.slots ?? []}
+              timezone={tz}
+              durationMinutes={
+                constraints.durationMinutes ??
+                Math.max(30, Math.round((constraints.endBy - constraints.startAfter) * 60))
+              }
+              removed={removedSlots}
+              onRemovedChange={setRemovedSlots}
+              extra={extraSlots}
+              onExtraChange={setExtraSlots}
+            />
           </section>
         )}
       </div>
