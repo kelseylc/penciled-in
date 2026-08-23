@@ -1,11 +1,11 @@
 import { AppBar } from "@/components/AppBar";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { format } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 import { AlertTriangle, Copy } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -60,6 +60,7 @@ const CHIP: Record<string, { label: string; className: string }> = {
 function HomePage() {
   const { session, loading } = useAuth();
   const tz = useMemo(localTz, []);
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const fetchOccurrences = useServerFn(getOrganizerOccurrences);
   const actFn = useServerFn(actOnOccurrence);
@@ -86,6 +87,13 @@ function HomePage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Nothing scheduled yet? The landing screen (prompt box + templates) is more useful.
+  useEffect(() => {
+    if (!loading && session && query.isSuccess && (query.data ?? []).length === 0) {
+      navigate({ to: "/", replace: true });
+    }
+  }, [loading, session, query.isSuccess, query.data, navigate]);
+
   if (loading) return <Shell>Loading…</Shell>;
   if (!session)
     return (
@@ -98,62 +106,53 @@ function HomePage() {
     );
   if (query.isLoading) return <Shell>Loading your sessions…</Shell>;
 
-  const all = query.data ?? [];
-  const byProject = new Map<string, OrganizerOccurrence[]>();
-  for (const occ of all) {
-    const list = byProject.get(occ.project_id) ?? [];
-    if (list.length < 3) list.push(occ);
-    byProject.set(occ.project_id, list);
-  }
+  const all = [...(query.data ?? [])].sort(
+    (a, b) =>
+      new Date(a.scheduled_start_utc).getTime() - new Date(b.scheduled_start_utc).getTime(),
+  );
+  const next = all[0];
+  if (!next) return <Shell>Loading your sessions…</Shell>;
 
   return (
     <Shell>
       <header className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Next up</h1>
         <p className="text-sm text-muted-foreground">
-          Your upcoming sessions, in your local time.
+          Your next session, in your local time.
         </p>
       </header>
 
-      {byProject.size === 0 && (
-        <div>
-          <p className="text-sm text-muted-foreground">
-            No scheduled sessions yet. Lock in a plan and they&apos;ll show up here.
-          </p>
-          <Link
-            to="/new"
-            className="mt-4 flex h-14 w-full items-center justify-center rounded-2xl bg-primary text-base font-bold text-primary-foreground"
-          >
-            Start scheduling
-          </Link>
-          <Link
-            to="/"
-            className="mt-3 flex min-h-11 w-full items-center justify-center rounded-2xl border border-border text-sm font-semibold"
-          >
-            Back to home
-          </Link>
-        </div>
-      )}
+      <section>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          {next.project_name}
+        </h2>
+        <OccurrenceCard
+          occ={next}
+          tz={tz}
+          pending={act.isPending}
+          onAct={(action) => act.mutate({ occurrenceId: next.id, action })}
+        />
+      </section>
 
-      <div className="space-y-8">
-        {[...byProject.values()].map((occs) => (
-          <section key={occs[0]!.project_id}>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              {occs[0]!.project_name}
-            </h2>
-            <div className="space-y-3">
-              {occs.map((occ) => (
-                <OccurrenceCard
-                  key={occ.id}
-                  occ={occ}
-                  tz={tz}
-                  pending={act.isPending}
-                  onAct={(action) => act.mutate({ occurrenceId: occ.id, action })}
-                />
-              ))}
-            </div>
-          </section>
-        ))}
+      <Link
+        to="/new"
+        className="mt-6 flex h-14 w-full items-center justify-center rounded-2xl bg-primary text-base font-bold text-primary-foreground"
+      >
+        Schedule next event
+      </Link>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <Link
+          to="/home"
+          className="flex min-h-12 items-center justify-center rounded-2xl border border-border text-sm font-semibold"
+        >
+          My events
+        </Link>
+        <Link
+          to="/groups"
+          className="flex min-h-12 items-center justify-center rounded-2xl border border-border text-sm font-semibold"
+        >
+          My groups
+        </Link>
       </div>
     </Shell>
   );

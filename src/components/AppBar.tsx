@@ -69,7 +69,7 @@ export function AppBar({ back = true, title }: Props) {
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link to="/home" className="cursor-pointer">
-              <CalendarCheck className="mr-2 size-4" aria-hidden /> Your events
+              <CalendarCheck className="mr-2 size-4" aria-hidden /> My events
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
