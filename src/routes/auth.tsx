@@ -262,20 +262,24 @@ function AuthPage() {
   const heading =
     mode === "code"
       ? "Enter your code"
-      : mode === "reset"
-        ? "Set a new password"
-        : mode === "signup"
-          ? "Create your organizer account"
-          : "Welcome back";
+      : mode === "verify-email"
+        ? "Confirm your email"
+        : mode === "reset"
+          ? "Set a new password"
+          : mode === "signup"
+            ? "Create your organizer account"
+            : "Welcome back";
 
   const sub =
     mode === "code"
       ? `We sent a 6-digit code to ${email.trim()}. It expires in 10 minutes.`
-      : mode === "reset"
-        ? "At least 8 characters. No symbol gymnastics required."
-        : mode === "signup"
-          ? "Organizers need an account. Responding to a plan never does."
-          : "Sign in to see your plans. Responding to a plan never needs an account.";
+      : mode === "verify-email"
+        ? `We sent a confirmation email to ${email.trim()}. Tap the button in it to activate your account — then come back here and sign in.`
+        : mode === "reset"
+          ? "At least 8 characters. No symbol gymnastics required."
+          : mode === "signup"
+            ? "Organizers need an account. Responding to a plan never does."
+            : "Sign in to see your plans. Responding to a plan never needs an account.";
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-5 pb-10 pt-2 text-base">
