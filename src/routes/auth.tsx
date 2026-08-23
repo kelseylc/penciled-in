@@ -61,7 +61,8 @@ function AuthPage() {
   const { session, loading } = useAuth();
   const claim = useServerFn(claimParticipants);
 
-  const [mode, setMode] = useState<Mode>("login");
+  const { mode: modeParam } = Route.useSearch();
+  const [mode, setMode] = useState<Mode>(modeParam ?? "login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
