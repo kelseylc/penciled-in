@@ -96,6 +96,44 @@ function NewProject() {
   const [hasDeadline, setHasDeadline] = useState(true);
   const [deadline, setDeadline] = useState<Date>(addDays(new Date(), 5));
   const [busy, setBusy] = useState(false);
+  const [draftNote, setDraftNote] = useState<{ summary: string; missing: string[] } | null>(null);
+  const search = Route.useSearch();
+
+  useEffect(() => {
+    if (!search.draft || !session) return;
+    const draft = takeDraft();
+    if (!draft) return;
+    setTemplateId(draft.template);
+    setConstraints({
+      days: draft.days,
+      startAfter: draft.startAfter,
+      endBy: draft.endBy,
+      durationMinutes: draft.durationMinutes,
+      fullDay: draft.fullDay,
+    });
+    if (draft.name) setName(draft.name);
+    setMode(draft.mode);
+    if (draft.cadence) setCadence(draft.cadence);
+    setWindowMode("rolling");
+    setRollingWeeks(draft.rollingWeeks || 4);
+    const parsedPeople = draft.people.map((p) => ({
+      key: crypto.randomUUID(),
+      display_name: p.display_name,
+      timezone: tz,
+      is_required: p.is_required,
+      profile_id: null,
+    }));
+    setPeople(parsedPeople);
+    if (draft.quorum) {
+      setQuorum(draft.quorum);
+      setQuorumTouched(true);
+    }
+    if (draft.deadlineDays) setDeadline(addDays(new Date(), draft.deadlineDays));
+    setDraftNote({ summary: draft.summary, missing: draft.missing });
+    setStep(parsedPeople.length === 0 ? 3 : draft.name ? 4 : 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.draft, session]);
+
 
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/auth" });
