@@ -6,7 +6,7 @@ never HTML only.
 
 | Type | Files |
 | --- | --- |
-| Sign-in code (OTP) | `magiclink.html` / `.txt` |
+| Sign-in link | `magiclink.html` / `.txt` |
 | Signup confirmation | `signup.html` / `.txt` |
 | Password recovery | `recovery.html` / `.txt` |
 | Invite | `invite.html` / `.txt` |
