@@ -1,6 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CalendarCheck, Clock, Users } from "lucide-react";
 
+import { PlanPrompt } from "@/components/PlanPrompt";
+
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
