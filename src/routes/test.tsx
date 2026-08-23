@@ -110,9 +110,19 @@ function TestModePage() {
           {run.isPending ? "Setting up…" : seed ? "Reset demo data" : "Enter test mode"}
         </Button>
         {session && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Signed in as {session.user.email}
-          </p>
+          <div className="mt-2 flex items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">Signed in as {session.user.email}</p>
+            <button
+              type="button"
+              className="min-h-11 text-xs font-bold text-primary"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                toast.success("Signed out — signed-out screens are now auditable");
+              }}
+            >
+              Sign out
+            </button>
+          </div>
         )}
 
         {seed && (
