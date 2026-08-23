@@ -1,8 +1,8 @@
 Confirm your email
 
-Enter this code in Penciled.in to finish creating your account. It expires in 10 minutes.
+Open this link to activate your Penciled.in account. It expires in 24 hours.
 
-{{ .Token }}
+{{ .ConfirmationURL }}
 
 Didn't sign up? You can ignore this email.
 

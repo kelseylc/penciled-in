@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { OtpInput } from "@/components/OtpInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,16 +13,17 @@ const DISMISS_KEY = "penciled:upsell-dismissed";
 /**
  * Soft, non-blocking account offer. Never a modal, never shown before the
  * response is saved, and never re-prompted once dismissed this session.
+ *
+ * Uses the same one-click email confirmation flow as the organizer sign-in
+ * page — no codes to copy anywhere in the app.
  */
 export function AccountUpsellCard({ variant = "respondent" }: { variant?: Variant }) {
   const [dismissed, setDismissed] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [sent, setSent] = useState(false);
-  const [resetKey, setResetKey] = useState(0);
   const [cooldown, setCooldown] = useState(0);
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState(false);
 
   useEffect(() => {
     try {
@@ -39,7 +39,7 @@ export function AccountUpsellCard({ variant = "respondent" }: { variant?: Varian
     return () => clearTimeout(t);
   }, [cooldown]);
 
-  if (dismissed || done) return null;
+  if (dismissed) return null;
 
   function dismiss() {
     try {
@@ -52,48 +52,21 @@ export function AccountUpsellCard({ variant = "respondent" }: { variant?: Varian
 
   async function save() {
     const address = email.trim();
-    if (!address) return;
+    if (!address || password.length < 8) return;
     setBusy(true);
     try {
-      if (variant === "organizer" && password) {
-        const { error } = await supabase.auth.signUp({
-          email: address,
-          password,
-          options: { emailRedirectTo: `${window.location.origin}/` },
-        });
-        if (error) throw error;
-        setSent(true);
-        setCooldown(30);
-        return;
-      }
-      const { error } = await supabase.auth.signInWithOtp({
+      const { error } = await supabase.auth.signUp({
         email: address,
-        options: { shouldCreateUser: true },
+        password,
+        options: { emailRedirectTo: `${window.location.origin}/` },
       });
       if (error) throw error;
       setSent(true);
       setCooldown(30);
-      setResetKey((k) => k + 1);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't send the code");
+      toast.error(e instanceof Error ? e.message : "Couldn't send that email");
     } finally {
       setBusy(false);
-    }
-  }
-
-  async function verify(code: string) {
-    try {
-      const { error } = await supabase.auth.verifyOtp({
-        email: email.trim(),
-        token: code,
-        type: "email",
-      });
-      if (error) throw error;
-      toast.success("Saved — we'll fill this in for you next time.");
-      setDone(true);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "That code didn't work");
-      setResetKey((k) => k + 1);
     }
   }
 
@@ -108,15 +81,18 @@ export function AccountUpsellCard({ variant = "respondent" }: { variant?: Varian
 
       {sent ? (
         <div className="mt-4 space-y-3">
-          <p className="text-sm font-semibold">Enter the 6-digit code we emailed you.</p>
-          <OtpInput onComplete={verify} resetKey={resetKey} />
+          <p className="text-sm font-semibold">Confirm your email</p>
+          <p className="text-sm text-muted-foreground">
+            We sent a confirmation email to {email.trim()}. Tap the button in it to activate your
+            account.
+          </p>
           <button
             type="button"
-            disabled={cooldown > 0}
+            disabled={cooldown > 0 || busy}
             onClick={save}
             className="min-h-11 w-full text-sm font-bold text-primary disabled:text-muted-foreground"
           >
-            {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
+            {cooldown > 0 ? `Resend email in ${cooldown}s` : "Resend email"}
           </button>
         </div>
       ) : (
@@ -134,29 +110,25 @@ export function AccountUpsellCard({ variant = "respondent" }: { variant?: Varian
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-          {variant === "organizer" && (
-            <>
-              <Label htmlFor="upsell-password" className="sr-only">
-                Password
-              </Label>
-              <Input
-                id="upsell-password"
-                type="password"
-                autoComplete="new-password"
-                className="h-12 text-base"
-                placeholder="Password (at least 8 characters)"
-                minLength={8}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </>
-          )}
+          <Label htmlFor="upsell-password" className="sr-only">
+            Password
+          </Label>
+          <Input
+            id="upsell-password"
+            type="password"
+            autoComplete="new-password"
+            className="h-12 text-base"
+            placeholder="Password (at least 8 characters)"
+            minLength={8}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
           <Button
             className="h-12 w-full text-base font-bold"
-            disabled={!email.trim() || busy}
+            disabled={!email.trim() || password.length < 8 || busy}
             onClick={save}
           >
-            Save my availability
+            {variant === "organizer" ? "Create my account" : "Save my availability"}
           </Button>
           <button
             type="button"
@@ -166,9 +138,7 @@ export function AccountUpsellCard({ variant = "respondent" }: { variant?: Varian
             No thanks
           </button>
           <p className="text-xs text-muted-foreground">
-            {variant === "organizer"
-              ? "Set a password so Face ID fills it next time, or leave it blank and we'll email a 6-digit code."
-              : "We'll email you a 6-digit code. No password to make up."}
+            We'll email you one link to confirm it's you. That's the whole setup.
           </p>
         </div>
       )}

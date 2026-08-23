@@ -1,8 +1,8 @@
-Your sign-in code
+Sign in to Penciled.in
 
-Enter this code in Penciled.in. It expires in 10 minutes and can only be used once.
+Open this link to sign in. It expires in 1 hour and can only be used once.
 
-{{ .Token }}
+{{ .ConfirmationURL }}
 
 Didn't ask for this? You can ignore this email.
 
