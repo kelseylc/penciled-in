@@ -429,6 +429,29 @@ function AuthPage() {
         </form>
       )}
 
+      {mode === "verify-email" && (
+        <div className="mt-8 space-y-5">
+          <p className="rounded-2xl bg-card p-4 text-sm text-muted-foreground">
+            One tap and you're done — no code to copy. If it's not there in a minute, check spam.
+          </p>
+          <button
+            type="button"
+            onClick={resendConfirmation}
+            disabled={cooldown > 0}
+            className="min-h-11 w-full text-sm font-bold text-primary disabled:text-muted-foreground"
+          >
+            {cooldown > 0 ? `Resend email in ${cooldown}s` : "Resend confirmation email"}
+          </button>
+          <Button
+            variant="secondary"
+            className="h-14 w-full rounded-2xl text-base"
+            onClick={backToLogin}
+          >
+            Back to sign in
+          </Button>
+        </div>
+      )}
+
       {mode === "code" && codeSent && (
         <div className="mt-8 space-y-5">
           <OtpInput onComplete={verify} disabled={verifying} resetKey={resetKey} />
