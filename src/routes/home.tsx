@@ -91,7 +91,7 @@ function HomePage() {
     return (
       <Shell>
         <p className="text-muted-foreground">Sign in to see your group's sessions.</p>
-        <Link to="/auth" className="mt-4 inline-block underline">
+        <Link to="/auth" search={{ redirect: "/home" }} className="mt-4 inline-block underline">
           Sign in
         </Link>
       </Shell>
