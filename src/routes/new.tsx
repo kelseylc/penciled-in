@@ -304,6 +304,21 @@ function NewProject() {
         ))}
       </div>
 
+      {draftNote && (
+        <div className="mt-4 rounded-2xl border-2 border-primary/40 bg-primary/10 p-4">
+          <p className="text-sm font-bold">Draft ready from your description</p>
+          <p className="mt-1 text-xs text-muted-foreground">{draftNote.summary}</p>
+          {draftNote.missing.length > 0 && (
+            <p className="mt-2 text-xs font-semibold text-primary">
+              Still need: {draftNote.missing.join(", ")}. Everything else is pre-filled — tap back
+              anytime to change it.
+            </p>
+          )}
+        </div>
+      )}
+
+
+
       <div className="mt-8 flex-1">
         {step === 0 && (
           <section>
