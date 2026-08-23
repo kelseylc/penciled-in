@@ -294,7 +294,7 @@ function AuthPage() {
     mode === "code"
       ? `We sent a 6-digit code to ${email.trim()}. It expires in 10 minutes.`
       : mode === "verify-email"
-        ? `We sent a confirmation email to ${email.trim()}. Tap the button in it to activate your account — then come back here and sign in.`
+        ? `We sent a confirmation email to ${email.trim()}. Tap the button in it to activate your account.`
         : mode === "reset"
           ? "At least 8 characters. No symbol gymnastics required."
           : mode === "signup"
@@ -432,7 +432,7 @@ function AuthPage() {
       {mode === "verify-email" && (
         <div className="mt-8 space-y-5">
           <p className="rounded-2xl bg-card p-4 text-sm text-muted-foreground">
-            One tap and you're done — no code to copy. If it's not there in a minute, check spam.
+            One tap and you're done. If it's not there in a minute, check spam.
           </p>
           <button
             type="button"

@@ -77,7 +77,7 @@ function Index() {
             to="/home"
             className="flex min-h-12 items-center justify-center rounded-2xl border border-border text-sm font-semibold"
           >
-            Your events
+            My events
           </Link>
           <Link
             to="/groups"
