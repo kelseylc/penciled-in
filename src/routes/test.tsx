@@ -149,7 +149,7 @@ function TestModePage() {
               </h2>
               <Row href="/auth" label="Sign in" hint="Email + password" />
               <Row href="/auth?mode=signup" label="Create account" hint="Ends on confirm-email screen" />
-              <Row href="/auth?mode=forgot" label="Forgot password" hint="Recovery link email" />
+              <Row href="/auth?mode=forgot" label="Forgot password" hint="Email form, sends the reset link" />
               <Row
                 href="/reset-password"
                 label="Set a new password"
