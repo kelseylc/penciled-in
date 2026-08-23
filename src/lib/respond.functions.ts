@@ -174,19 +174,29 @@ export const joinProject = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!project) throw new Error("This plan link isn't valid anymore.");
 
+    // Exact (case-insensitive) name match on an unclaimed participant means
+    // "welcome back" — edit that response instead of creating a duplicate.
     const { data: existing } = await supabaseAdmin
       .from("participants")
-      .select("id, token, display_name, responded_at")
+      .select("id, token, display_name, responded_at, profile_id")
       .eq("project_id", project.id)
+      .is("profile_id", null)
       .ilike("display_name", data.name);
 
-    const match = existing?.[0];
+    const match = (existing ?? []).find(
+      (p) => p.display_name.trim().toLowerCase() === data.name.trim().toLowerCase(),
+    );
     if (match) {
       await supabaseAdmin
         .from("participants")
         .update({ timezone: data.timezone })
         .eq("id", match.id);
-      return { participant_id: match.id, token: match.token };
+      return {
+        participant_id: match.id,
+        token: match.token,
+        returning: true,
+        hadResponses: !!match.responded_at,
+      };
     }
 
     const { data: created, error } = await supabaseAdmin
@@ -201,7 +211,12 @@ export const joinProject = createServerFn({ method: "POST" })
       .single();
     if (error || !created) throw new Error(error?.message ?? "Could not add you to this plan");
 
-    return { participant_id: created.id, token: created.token };
+    return {
+      participant_id: created.id,
+      token: created.token,
+      returning: false,
+      hadResponses: false,
+    };
   });
 
 export const submitResponses = createServerFn({ method: "POST" })

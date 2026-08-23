@@ -8,11 +8,11 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { OtpInput } from "@/components/OtpInput";
+import { AccountUpsellCard } from "@/components/AccountUpsellCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
+import { readGuestToken, writeGuestToken } from "@/lib/guest-token";
 import {
   getRespondBundle,
   joinProject,
@@ -67,10 +67,6 @@ function tzLabel(timezone: string) {
   }
 }
 
-function storageKey(slug: string) {
-  return `aih.token.${slug}`;
-}
-
 function RespondPage() {
   const { slug } = Route.useParams();
   const search = Route.useSearch();
@@ -89,24 +85,14 @@ function RespondPage() {
   const [prefilled, setPrefilled] = useState(false);
   const [bannerOpen, setBannerOpen] = useState(true);
   const [changingTz, setChangingTz] = useState(false);
-  const [upsellEmail, setUpsellEmail] = useState("");
-  const [upsellOpen, setUpsellOpen] = useState(false);
-  const [upsellSent, setUpsellSent] = useState(false);
-  const [upsellResetKey, setUpsellResetKey] = useState(0);
-  const [upsellCooldown, setUpsellCooldown] = useState(0);
-
-  useEffect(() => {
-    if (upsellCooldown <= 0) return;
-    const t = setTimeout(() => setUpsellCooldown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [upsellCooldown]);
+  const [welcomeBack, setWelcomeBack] = useState(false);
 
   useEffect(() => {
     setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
-    const stored = search.t ?? window.localStorage.getItem(storageKey(slug));
+    const stored = search.t ?? readGuestToken(slug);
     if (stored) {
       setToken(stored);
-      window.localStorage.setItem(storageKey(slug), stored);
+      writeGuestToken(slug, stored);
     }
     setTokenReady(true);
   }, [slug, search.t]);
@@ -158,7 +144,10 @@ function RespondPage() {
 
   const grouped = useMemo(() => {
     if (!bundle) return [];
-    const map = new Map<string, { label: string; weekend: boolean; slots: RespondBundle["slots"] }>();
+    const map = new Map<
+      string,
+      { label: string; weekend: boolean; slots: RespondBundle["slots"] }
+    >();
     for (const slot of bundle.slots) {
       const local = toZonedTime(new Date(slot.start_utc), timezone);
       const key = format(local, "yyyy-MM-dd");
@@ -185,11 +174,11 @@ function RespondPage() {
   const outstanding = bundle?.participants.filter((p) => !p.responded) ?? [];
 
   const joinMutation = useMutation({
-    mutationFn: async () =>
-      join({ data: { slug, name: name.trim(), timezone } }),
+    mutationFn: async () => join({ data: { slug, name: name.trim(), timezone } }),
     onSuccess: (res) => {
       setToken(res.token);
-      window.localStorage.setItem(storageKey(slug), res.token);
+      writeGuestToken(slug, res.token);
+      if (res.returning && res.hadResponses) setWelcomeBack(true);
       navigate({ to: "/p/$slug", params: { slug }, search: { t: res.token }, replace: true });
       setScreen("grid");
     },
@@ -241,37 +230,6 @@ function RespondPage() {
     setAnswers(next);
   }
 
-  async function sendUpsellCode() {
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: upsellEmail.trim(),
-        options: { shouldCreateUser: true },
-      });
-      if (error) throw error;
-      setUpsellSent(true);
-      setUpsellCooldown(30);
-      setUpsellResetKey((k) => k + 1);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't send the code");
-    }
-  }
-
-  async function verifyUpsellCode(code: string) {
-    try {
-      const { error } = await supabase.auth.verifyOtp({
-        email: upsellEmail.trim(),
-        token: code,
-        type: "email",
-      });
-      if (error) throw error;
-      toast.success("Signed in — your usual availability is saved to this account.");
-      setUpsellOpen(false);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "That code didn't work");
-      setUpsellResetKey((k) => k + 1);
-    }
-  }
-
   if (!tokenReady || (bundleQuery.isLoading && !bundle)) {
     return (
       <main className="mx-auto flex min-h-dvh w-full max-w-md items-center justify-center px-5">
@@ -284,9 +242,7 @@ function RespondPage() {
     return (
       <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col items-center justify-center px-5 text-center">
         <h1 className="text-2xl font-black">This link isn't working</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Ask whoever sent it to share it again.
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">Ask whoever sent it to share it again.</p>
       </main>
     );
   }
@@ -366,10 +322,19 @@ function RespondPage() {
           <div className="flex flex-wrap gap-3 text-xs">
             <Legend className="bg-emerald-500 text-white" label="Yes" />
             <Legend className="bg-amber-400 text-amber-950" label="Maybe" />
-            <Legend className="border-2 border-muted-foreground/50 text-muted-foreground" label="No" />
+            <Legend
+              className="border-2 border-muted-foreground/50 text-muted-foreground"
+              label="No"
+            />
             <Legend className="border border-border bg-card" label="Not set" />
           </div>
         </div>
+
+        {welcomeBack && (
+          <p className="mt-3 rounded-2xl bg-accent p-4 text-sm text-accent-foreground">
+            Welcome back — here's what you said last time.
+          </p>
+        )}
 
         {prefilled && bannerOpen && (
           <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 rounded-2xl bg-accent p-4 text-accent-foreground">
@@ -543,55 +508,7 @@ function RespondPage() {
         )}
       </div>
 
-      <div className="mt-6 rounded-2xl bg-secondary p-4">
-        {upsellOpen ? (
-          <div className="space-y-3">
-            {upsellSent ? (
-              <>
-                <p className="text-sm font-bold">Enter the 6-digit code we emailed you.</p>
-                <OtpInput onComplete={verifyUpsellCode} resetKey={upsellResetKey} />
-                <button
-                  type="button"
-                  disabled={upsellCooldown > 0}
-                  onClick={sendUpsellCode}
-                  className="min-h-11 w-full text-sm font-bold text-primary disabled:text-muted-foreground"
-                >
-                  {upsellCooldown > 0 ? `Resend code in ${upsellCooldown}s` : "Resend code"}
-                </button>
-              </>
-            ) : (
-              <>
-                <Label htmlFor="upsell-email" className="text-sm font-bold">
-                  Where should we send your code?
-                </Label>
-                <Input
-                  id="upsell-email"
-                  type="email"
-                  className="h-12"
-                  placeholder="you@example.com"
-                  value={upsellEmail}
-                  onChange={(e) => setUpsellEmail(e.target.value)}
-                />
-                <Button
-                  className="h-12 w-full font-bold"
-                  disabled={!upsellEmail.trim()}
-                  onClick={sendUpsellCode}
-                >
-                  Send my code
-                </Button>
-              </>
-            )}
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setUpsellOpen(true)}
-            className="min-h-11 w-full text-left text-sm font-bold"
-          >
-            Save this as your usual availability?
-          </button>
-        )}
-      </div>
+      <AccountUpsellCard variant="respondent" />
 
       <button
         type="button"

@@ -8,6 +8,7 @@ import { ChevronDown, Lock, Check } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { AccountUpsellCard } from "@/components/AccountUpsellCard";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { getResults, lockOneOff, lockCadence } from "@/lib/results.functions";
@@ -64,7 +65,7 @@ function formatSlot(startUtc: string, endUtc: string, tz: string) {
 
 function ResultsPage() {
   const { slug } = Route.useParams();
-  const { session, loading } = useAuth();
+  const { session } = useAuth();
   const tz = useMemo(localTz, []);
   const fetchResults = useServerFn(getResults);
   const qc = useQueryClient();
@@ -73,7 +74,6 @@ function ResultsPage() {
   const query = useQuery({
     queryKey: ["results", slug],
     queryFn: () => fetchResults({ data: { slug } }),
-    enabled: !!session,
   });
 
   const nudgeFn = useServerFn(nudgeResponders);
@@ -162,19 +162,12 @@ function ResultsPage() {
     );
   }, [data, tz]);
 
-  if (loading) return <Shell>Loading…</Shell>;
-  if (!session)
-    return (
-      <Shell>
-        <p className="text-muted-foreground">Sign in as the organizer to see results.</p>
-        <Link to="/auth" className="mt-4 inline-block underline">
-          Sign in
-        </Link>
-      </Shell>
-    );
   if (query.isLoading) return <Shell>Crunching answers…</Shell>;
   if (query.error || !data)
     return <Shell>{(query.error as Error)?.message ?? "Couldn't load this plan."}</Shell>;
+
+  // Reads are open to anyone with the link; only deciding needs the organizer.
+  const canDecide = !!session;
 
   const waiting = data.participants.filter((p) => !p.responded).map((p) => p.display_name);
   const total = data.participants.length;
@@ -185,8 +178,8 @@ function ResultsPage() {
       <header className="mb-5">
         <h1 className="text-2xl font-bold tracking-tight">{data.project.name}</h1>
         <p className="text-sm text-muted-foreground">
-          {data.participants.filter((p) => p.responded).length} of {total} responded · times in
-          your local zone
+          {data.participants.filter((p) => p.responded).length} of {total} responded · times in your
+          local zone
         </p>
       </header>
 
@@ -205,11 +198,9 @@ function ResultsPage() {
         </div>
       )}
 
-      {locked && !data.project.group_id && !savedGroupSlug && groupPromptOpen && (
+      {canDecide && locked && !data.project.group_id && !savedGroupSlug && groupPromptOpen && (
         <div className="mb-5 rounded-2xl border border-border bg-card p-4">
-          <p className="text-sm font-semibold">
-            Save these {total} people as a group?
-          </p>
+          <p className="text-sm font-semibold">Save these {total} people as a group?</p>
           <p className="mt-1 text-sm text-muted-foreground">
             Next time you can skip straight past the awkward name-typing part.
           </p>
@@ -227,11 +218,7 @@ function ResultsPage() {
             >
               Save group
             </Button>
-            <Button
-              variant="secondary"
-              className="h-12"
-              onClick={() => setGroupPromptOpen(false)}
-            >
+            <Button variant="secondary" className="h-12" onClick={() => setGroupPromptOpen(false)}>
               Not now
             </Button>
           </div>
@@ -253,9 +240,11 @@ function ResultsPage() {
             <span className="text-muted-foreground">Waiting on: </span>
             {waiting.join(", ")}
           </p>
-          <Button variant="secondary" className="h-11 shrink-0" onClick={() => nudgeM.mutate()}>
-            Nudge
-          </Button>
+          {canDecide && (
+            <Button variant="secondary" className="h-11 shrink-0" onClick={() => nudgeM.mutate()}>
+              Nudge
+            </Button>
+          )}
         </div>
       )}
 
@@ -280,13 +269,15 @@ function ResultsPage() {
                 Quorum met for {option.metCount} of the next {option.totalCount} sessions
               </p>
               <p className="mt-1 text-sm text-muted-foreground">{option.tradeoff}</p>
-              <Button
-                className="mt-4 h-12 w-full"
-                disabled={lockCadenceM.isPending || locked}
-                onClick={() => lockCadenceM.mutate(option)}
-              >
-                <Lock className="mr-2 h-4 w-4" /> Lock this cadence
-              </Button>
+              {canDecide && (
+                <Button
+                  className="mt-4 h-12 w-full"
+                  disabled={lockCadenceM.isPending || locked}
+                  onClick={() => lockCadenceM.mutate(option)}
+                >
+                  <Lock className="mr-2 h-4 w-4" /> Lock this cadence
+                </Button>
+              )}
             </article>
           ))}
         </section>
@@ -305,6 +296,7 @@ function ResultsPage() {
               total={total}
               tz={tz}
               disabled={lockSlotM.isPending || locked}
+              canLock={canDecide}
               onLock={() => lockSlotM.mutate(s.slot.id)}
             />
           ))}
@@ -343,7 +335,7 @@ function ResultsPage() {
                   <p className="mt-1 text-xs text-muted-foreground">
                     {s.viable ? missingLine(s) || "Everyone can make it." : s.reasons.join(" · ")}
                   </p>
-                  {s.viable && !locked && (
+                  {canDecide && s.viable && !locked && (
                     <Button
                       variant="secondary"
                       className="mt-3 h-11 w-full"
@@ -358,6 +350,8 @@ function ResultsPage() {
           )}
         </section>
       )}
+
+      {!canDecide && <AccountUpsellCard variant="organizer" />}
     </Shell>
   );
 }
@@ -365,9 +359,7 @@ function ResultsPage() {
 function missingLine(s: SlotScore): string {
   const parts: string[] = [];
   if (s.noNames.length > 0) {
-    parts.push(
-      `${listNames(s.noNames)} can't make it${s.noNames.length === 1 ? "." : "."}`,
-    );
+    parts.push(`${listNames(s.noNames)} can't make it${s.noNames.length === 1 ? "." : "."}`);
   }
   if (s.unknownNames.length > 0) {
     parts.push(
@@ -385,12 +377,14 @@ function SlotCard({
   total,
   tz,
   disabled,
+  canLock,
   onLock,
 }: {
   score: SlotScore;
   total: number;
   tz: string;
   disabled: boolean;
+  canLock: boolean;
   onLock: () => void;
 }) {
   return (
@@ -408,7 +402,7 @@ function SlotCard({
       <p className="mt-1 text-sm text-muted-foreground">
         {score.viable ? missingLine(score) || "Everyone can make it." : score.reasons.join(" · ")}
       </p>
-      {score.viable && (
+      {canLock && score.viable && (
         <Button className="mt-4 h-12 w-full" disabled={disabled} onClick={onLock}>
           <Lock className="mr-2 h-4 w-4" /> Lock this in
         </Button>

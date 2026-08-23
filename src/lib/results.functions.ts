@@ -37,17 +37,17 @@ export interface ResultsBundle {
 
 const slugSchema = z.object({ slug: z.string().min(3).max(40) });
 
+// Results are deliberately public: anyone holding the project link can read
+// tallies, outstanding names, ranked slots, and the decision. No token, no login.
 export const getResults = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => slugSchema.parse(data))
-  .handler(async ({ data, context }): Promise<ResultsBundle> => {
-    const sb = context.supabase;
+  .handler(async ({ data }): Promise<ResultsBundle> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const sb = supabaseAdmin;
 
     const { data: project } = await sb
       .from("projects")
-      .select(
-        "id, name, slug, status, mode, cadence, quorum_min, duration_minutes, group_id",
-      )
+      .select("id, name, slug, status, mode, cadence, quorum_min, duration_minutes, group_id")
       .eq("slug", data.slug)
       .maybeSingle();
     if (!project) throw new Error("Plan not found");
