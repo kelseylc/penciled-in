@@ -8,6 +8,7 @@ import { AppBar } from "@/components/AppBar";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { writeGuestToken } from "@/lib/guest-token";
 import { enterTestMode, type TestModeSeed } from "@/lib/testmode.functions";
 
 export const Route = createFileRoute("/test")({
@@ -76,7 +77,7 @@ function TestModePage() {
       // Seed guest tokens so the respond screens skip the "who are you" step.
       for (const p of data.projects) {
         const first = p.participants[0];
-        if (first) window.localStorage.setItem(`aih:token:${p.slug}`, first.token);
+        if (first) writeGuestToken(p.slug, first.token);
       }
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       return data;
