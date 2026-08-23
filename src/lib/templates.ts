@@ -1,18 +1,20 @@
-export type TemplateId =
-  | "coffee"
-  | "brunch"
-  | "lunch"
-  | "dinner"
-  | "movie"
-  | "dnd"
-  | "hang";
+export type TemplateId = "brunch" | "dinner" | "movie" | "dnd" | "trip" | "hang";
 
 export type DayKind = "weekday" | "weekend";
 
-/** Hour ranges are decimal hours in the organizer's local timezone. */
-export interface TimeRange {
-  start: number;
-  end: number;
+/** Organizer-set boundaries for when an event may happen. All hours are decimal
+ *  hours in the organizer's local timezone (e.g. 17.5 = 5:30pm). */
+export interface EventConstraints {
+  /** Days of week allowed, 0 = Sunday … 6 = Saturday. */
+  days: number[];
+  /** Earliest the event may start. */
+  startAfter: number;
+  /** Latest the event must be finished by (24 = midnight). */
+  endBy: number;
+  /** null = "any length" — the whole allowed window is offered as one block. */
+  durationMinutes: number | null;
+  /** Multi-day: every selected day in a contiguous run must work for everyone. */
+  fullDay?: boolean;
 }
 
 export interface ProjectTemplate {
@@ -20,103 +22,98 @@ export interface ProjectTemplate {
   label: string;
   blurb: string;
   emoji: string;
-  defaultDuration: number;
-  /** null => user picks duration */
-  durationRange?: { min: number; max: number; step: number };
   windowLabel: string;
-  /** Ranges per day kind. Empty array => that day kind is excluded. */
-  windows: Record<DayKind, TimeRange[]>;
+  defaults: EventConstraints;
 }
 
+export const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
+export const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
+export const DAY_NAMES = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
 export const TEMPLATES: ProjectTemplate[] = [
-  {
-    id: "coffee",
-    label: "Coffee",
-    blurb: "Short and caffeinated",
-    emoji: "☕️",
-    defaultDuration: 60,
-    windowLabel: "Weekdays, before 10am or after 3pm",
-    windows: {
-      weekday: [
-        { start: 7, end: 10 },
-        { start: 15, end: 19 },
-      ],
-      weekend: [],
-    },
-  },
   {
     id: "brunch",
     label: "Brunch",
     blurb: "Weekend, eggs involved",
     emoji: "🥞",
-    defaultDuration: 90,
-    windowLabel: "Sat/Sun, 9am–1pm",
-    windows: { weekday: [], weekend: [{ start: 9, end: 13 }] },
-  },
-  {
-    id: "lunch",
-    label: "Lunch",
-    blurb: "Midday, any day",
-    emoji: "🥗",
-    defaultDuration: 90,
-    windowLabel: "Any day, 11:30am–2pm",
-    windows: {
-      weekday: [{ start: 11.5, end: 14 }],
-      weekend: [{ start: 11.5, end: 14 }],
-    },
+    windowLabel: "Sat/Sun · 90 min · 10am–3pm",
+    defaults: { days: [0, 6], startAfter: 10, endBy: 15, durationMinutes: 90 },
   },
   {
     id: "dinner",
     label: "Dinner",
-    blurb: "Evening, any day",
+    blurb: "Any day, after the kids are down",
     emoji: "🍝",
-    defaultDuration: 90,
-    windowLabel: "Any day, 5:30–9pm",
-    windows: {
-      weekday: [{ start: 17.5, end: 21 }],
-      weekend: [{ start: 17.5, end: 21 }],
-    },
+    windowLabel: "Any day · 2 hrs · after 5pm",
+    defaults: { days: ALL_DAYS, startAfter: 17, endBy: 24, durationMinutes: 120 },
   },
   {
     id: "movie",
     label: "Movie night",
     blurb: "Feature length plus talking",
     emoji: "🍿",
-    defaultDuration: 150,
-    windowLabel: "Any day, 6–10pm",
-    windows: {
-      weekday: [{ start: 18, end: 22 }],
-      weekend: [{ start: 18, end: 22 }],
-    },
+    windowLabel: "Fri/Sat · 3 hrs · after 5pm",
+    defaults: { days: [5, 6], startAfter: 17, endBy: 24, durationMinutes: 180 },
   },
   {
     id: "dnd",
     label: "D&D session",
     blurb: "The long haul",
     emoji: "🎲",
-    defaultDuration: 240,
-    durationRange: { min: 180, max: 360, step: 30 },
-    windowLabel: "Weekends any time; weekdays after 6pm",
-    windows: {
-      weekday: [{ start: 18, end: 24 }],
-      weekend: [{ start: 9, end: 24 }],
-    },
+    windowLabel: "Any day · 4 hrs · done by 11pm",
+    defaults: { days: ALL_DAYS, startAfter: 9, endBy: 23, durationMinutes: 240 },
+  },
+  {
+    id: "trip",
+    label: "Weekend trip",
+    blurb: "Whole days, everyone in",
+    emoji: "🧳",
+    windowLabel: "Sat + Sun · full days",
+    defaults: { days: [6, 0], startAfter: 0, endBy: 24, durationMinutes: null, fullDay: true },
   },
   {
     id: "hang",
-    label: "Just hang",
-    blurb: "No constraints, no theme",
+    label: "Custom hang",
+    blurb: "You set every boundary",
     emoji: "🛋️",
-    defaultDuration: 120,
-    durationRange: { min: 30, max: 360, step: 30 },
-    windowLabel: "Unconstrained",
-    windows: {
-      weekday: [{ start: 8, end: 24 }],
-      weekend: [{ start: 8, end: 24 }],
-    },
+    windowLabel: "You pick days, length and hours",
+    defaults: { days: ALL_DAYS, startAfter: 9, endBy: 24, durationMinutes: null },
   },
 ];
 
 export function getTemplate(id: TemplateId): ProjectTemplate {
   return TEMPLATES.find((t) => t.id === id) ?? TEMPLATES[TEMPLATES.length - 1]!;
+}
+
+export function formatHour(h: number): string {
+  if (h >= 24) return "midnight";
+  const hour = Math.floor(h);
+  const mins = Math.round((h - hour) * 60);
+  const suffix = hour >= 12 ? "pm" : "am";
+  const display = hour % 12 === 0 ? 12 : hour % 12;
+  return `${display}${mins ? `:${String(mins).padStart(2, "0")}` : ""}${suffix}`;
+}
+
+export function formatDuration(minutes: number | null): string {
+  if (minutes === null) return "Any length";
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h}${m ? `.${Math.round((m / 60) * 10)}` : ""} hr${h === 1 && !m ? "" : "s"}`;
+}
+
+export function describeDays(days: number[]): string {
+  const set = [...new Set(days)].sort((a, b) => a - b);
+  if (set.length === 7) return "Any day";
+  if (set.length === 0) return "No days";
+  if (set.length === 2 && set.includes(0) && set.includes(6)) return "Sat/Sun";
+  return set.map((d) => DAY_NAMES[d]!.slice(0, 3)).join(", ");
 }
