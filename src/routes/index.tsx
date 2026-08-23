@@ -45,6 +45,13 @@ function Index() {
         <PlanPrompt />
       </div>
 
+      <Link
+        to="/new"
+        className="mt-3 flex h-14 w-full items-center justify-center rounded-2xl bg-primary text-base font-bold text-primary-foreground"
+      >
+        Create using template
+      </Link>
+
       <ul className="mt-8 space-y-4">
         {[
           {
