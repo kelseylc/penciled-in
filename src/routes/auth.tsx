@@ -51,7 +51,7 @@ const emailSchema = z.string().trim().email("That doesn't look like an email").m
 const passwordSchema = z.string().min(8, "Passwords need at least 8 characters").max(200);
 const displayNameSchema = z.string().trim().min(1, "Add a name your group will recognize").max(80);
 
-type Mode = "login" | "signup" | "code" | "reset";
+type Mode = "login" | "signup" | "code" | "reset" | "verify-email";
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -146,16 +146,15 @@ function AuthPage() {
       const { data, error } = await supabase.auth.signUp({
         email: address,
         password: pw.data,
-        options: { data: { display_name: name.data } },
+        options: {
+          data: { display_name: name.data },
+          emailRedirectTo: `${window.location.origin}/auth`,
+        },
       });
       if (error) throw error;
       if (data.session) return; // Auto-confirm on: the listener takes it from here.
-      setCodeType("signup");
-      setAfterCode("done");
-      setCodeSent(true);
       setCooldown(30);
-      setResetKey((k) => k + 1);
-      setMode("code");
+      setMode("verify-email");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Couldn't create your account");
     } finally {
@@ -208,6 +207,26 @@ function AuthPage() {
       toast.error(err instanceof Error ? err.message : "Couldn't resend the code");
     }
   }
+
+  /** Re-sends the signup confirmation link (not a code). */
+  async function resendConfirmation() {
+    if (cooldown > 0) return;
+    const address = parseEmail();
+    if (!address) return;
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: address,
+        options: { emailRedirectTo: `${window.location.origin}/auth` },
+      });
+      if (error) throw error;
+      setCooldown(30);
+      toast.success("Confirmation email sent again");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't resend the email");
+    }
+  }
+
 
   async function verify(code: string) {
     const address = emailSchema.safeParse(email);
@@ -263,20 +282,24 @@ function AuthPage() {
   const heading =
     mode === "code"
       ? "Enter your code"
-      : mode === "reset"
-        ? "Set a new password"
-        : mode === "signup"
-          ? "Create your organizer account"
-          : "Welcome back";
+      : mode === "verify-email"
+        ? "Confirm your email"
+        : mode === "reset"
+          ? "Set a new password"
+          : mode === "signup"
+            ? "Create your organizer account"
+            : "Welcome back";
 
   const sub =
     mode === "code"
       ? `We sent a 6-digit code to ${email.trim()}. It expires in 10 minutes.`
-      : mode === "reset"
-        ? "At least 8 characters. No symbol gymnastics required."
-        : mode === "signup"
-          ? "Organizers need an account. Responding to a plan never does."
-          : "Sign in to see your plans. Responding to a plan never needs an account.";
+      : mode === "verify-email"
+        ? `We sent a confirmation email to ${email.trim()}. Tap the button in it to activate your account — then come back here and sign in.`
+        : mode === "reset"
+          ? "At least 8 characters. No symbol gymnastics required."
+          : mode === "signup"
+            ? "Organizers need an account. Responding to a plan never does."
+            : "Sign in to see your plans. Responding to a plan never needs an account.";
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-5 pb-10 pt-2 text-base">
@@ -404,6 +427,29 @@ function AuthPage() {
             Already have an account? Sign in
           </button>
         </form>
+      )}
+
+      {mode === "verify-email" && (
+        <div className="mt-8 space-y-5">
+          <p className="rounded-2xl bg-card p-4 text-sm text-muted-foreground">
+            One tap and you're done — no code to copy. If it's not there in a minute, check spam.
+          </p>
+          <button
+            type="button"
+            onClick={resendConfirmation}
+            disabled={cooldown > 0}
+            className="min-h-11 w-full text-sm font-bold text-primary disabled:text-muted-foreground"
+          >
+            {cooldown > 0 ? `Resend email in ${cooldown}s` : "Resend confirmation email"}
+          </button>
+          <Button
+            variant="secondary"
+            className="h-14 w-full rounded-2xl text-base"
+            onClick={backToLogin}
+          >
+            Back to sign in
+          </Button>
+        </div>
       )}
 
       {mode === "code" && codeSent && (
