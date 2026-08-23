@@ -54,7 +54,6 @@ export const Route = createFileRoute("/new")({
   component: NewProject,
 });
 
-
 type Person = {
   key: string;
   display_name: string;
@@ -72,10 +71,7 @@ function NewProject() {
   const { session, loading } = useAuth();
   const create = useServerFn(createProject);
   const saveGroup = useServerFn(saveGroupFromProject);
-  const tz = useMemo(
-    () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-    [],
-  );
+  const tz = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", []);
 
   const [step, setStep] = useState(0);
   const [templateId, setTemplateId] = useState<TemplateId | null>(null);
@@ -139,7 +135,6 @@ function NewProject() {
     setStep(parsedPeople.length === 0 ? 3 : draft.name ? 4 : 1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search.draft, session]);
-
 
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/auth" });
@@ -308,10 +303,7 @@ function NewProject() {
         {STEPS.map((s, i) => (
           <span
             key={s}
-            className={cn(
-              "h-1 flex-1 rounded-full",
-              i <= step ? "bg-primary" : "bg-secondary",
-            )}
+            className={cn("h-1 flex-1 rounded-full", i <= step ? "bg-primary" : "bg-secondary")}
           />
         ))}
       </div>
@@ -328,8 +320,6 @@ function NewProject() {
           )}
         </div>
       )}
-
-
 
       <div className="mt-8 flex-1">
         {step === 0 && (
@@ -366,7 +356,9 @@ function NewProject() {
               <div className="mt-6 space-y-5 rounded-2xl border-2 border-border bg-card p-4">
                 <div>
                   <p className="text-sm font-bold">Which days work?</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{describeDays(constraints.days)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {describeDays(constraints.days)}
+                  </p>
                   <div className="mt-3 flex gap-1.5">
                     {DAY_LABELS.map((label, i) => (
                       <button
@@ -406,9 +398,7 @@ function NewProject() {
                         max={480}
                         step={30}
                         value={[constraints.durationMinutes ?? 0]}
-                        onValueChange={([v]) =>
-                          patch({ durationMinutes: !v ? null : v })
-                        }
+                        onValueChange={([v]) => patch({ durationMinutes: !v ? null : v })}
                       />
                       <p className="text-xs text-muted-foreground">
                         Slide all the way left for “any length”.
@@ -428,9 +418,7 @@ function NewProject() {
                         step={0.5}
                         minStepsBetweenThumbs={1}
                         value={[constraints.startAfter, constraints.endBy]}
-                        onValueChange={([a, b]) =>
-                          patch({ startAfter: a ?? 0, endBy: b ?? 24 })
-                        }
+                        onValueChange={([a, b]) => patch({ startAfter: a ?? 0, endBy: b ?? 24 })}
                       />
                       <p className="text-xs text-muted-foreground">
                         Starts after {formatHour(constraints.startAfter)} · ends by{" "}
@@ -441,7 +429,6 @@ function NewProject() {
                 )}
               </div>
             )}
-
           </section>
         )}
 
@@ -667,7 +654,8 @@ function NewProject() {
                     disabled={!session}
                     onCheckedChange={(c) => {
                       setSaveAsGroup(c);
-                      if (c && !saveGroupName) setSaveGroupName(name.trim() ? `${name.trim()} crew` : "");
+                      if (c && !saveGroupName)
+                        setSaveGroupName(name.trim() ? `${name.trim()} crew` : "");
                     }}
                   />
                 </div>

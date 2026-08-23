@@ -4,7 +4,6 @@ import { CalendarCheck, Clock, Users } from "lucide-react";
 import { AppBar } from "@/components/AppBar";
 import { PlanPrompt } from "@/components/PlanPrompt";
 
-
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -64,7 +63,6 @@ function Index() {
           </li>
         ))}
       </ul>
-
 
       <div className="mt-auto pt-10">
         <Link

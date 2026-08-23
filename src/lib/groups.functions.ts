@@ -4,8 +4,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { randomSlug } from "@/lib/slug";
 
-
-
 /** Turn the people on a locked plan into a reusable saved group. */
 export const saveGroupFromProject = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -377,9 +375,7 @@ export const setCoOrganizer = createServerFn({ method: "POST" })
       .ilike("email", data.email)
       .maybeSingle();
     if (!profile)
-      throw new Error(
-        "No account with that email yet. Ask them to sign in once, then try again.",
-      );
+      throw new Error("No account with that email yet. Ask them to sign in once, then try again.");
 
     const { error } = await sb
       .from("group_members")
