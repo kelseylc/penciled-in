@@ -5,9 +5,11 @@
  */
 
 const MAX_AGE_SECONDS = 400 * 24 * 60 * 60; // browsers cap cookies near 400 days
+const PREFIX = "aih.token.";
+const TOKEN_SHAPE = /^[a-f0-9]{16,80}$/i;
 
 function key(slug: string) {
-  return `aih.token.${slug}`;
+  return `${PREFIX}${slug}`;
 }
 
 function readCookie(name: string): string | null {
@@ -53,17 +55,41 @@ export function writeGuestToken(slug: string, token: string) {
 
 /**
  * Every guest token this browser has collected, so a new account can claim the
- * answers behind them. Reads the localStorage layer only — the cookie layer is
- * per-slug and can't be enumerated by prefix.
+ * answers behind them.
+ *
+ * Reads BOTH layers. Writing to two places is pointless if the claim only ever
+ * consults one of them: a Safari user whose localStorage was evicted still has
+ * the cookie, and used to claim nothing at all.
  */
 export function storedGuestTokens(): string[] {
   if (typeof window === "undefined") return [];
-  const tokens: string[] = [];
-  for (let i = 0; i < window.localStorage.length; i += 1) {
-    const stored = window.localStorage.key(i);
-    if (!stored || !stored.startsWith("aih.token.")) continue;
-    const value = window.localStorage.getItem(stored);
-    if (value && /^[a-f0-9]{16,80}$/i.test(value)) tokens.push(value);
+  // The same token lives in both layers, so collect by value.
+  const found = new Set<string>();
+  const keep = (value: string | null) => {
+    if (value && TOKEN_SHAPE.test(value)) found.add(value);
+  };
+
+  try {
+    for (let i = 0; i < window.localStorage.length; i += 1) {
+      const stored = window.localStorage.key(i);
+      if (stored?.startsWith(PREFIX)) keep(window.localStorage.getItem(stored));
+    }
+  } catch {
+    /* storage blocked — the cookie layer below still answers */
   }
-  return tokens;
+
+  // document.cookie lists every readable cookie as `name=value`, so the same
+  // prefix scan works here.
+  try {
+    for (const part of document.cookie.split("; ")) {
+      const eq = part.indexOf("=");
+      if (eq < 0) continue;
+      if (!decodeURIComponent(part.slice(0, eq)).startsWith(PREFIX)) continue;
+      keep(decodeURIComponent(part.slice(eq + 1)));
+    }
+  } catch {
+    /* cookies blocked — localStorage above already answered */
+  }
+
+  return [...found];
 }
