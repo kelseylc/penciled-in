@@ -255,6 +255,7 @@ function NewProject() {
     people.length > 0,
     quorum >= 1,
     true,
+    finalSlots.length > 0,
   ][step];
 
   async function submit() {
