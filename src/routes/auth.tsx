@@ -178,7 +178,7 @@ function AuthPage() {
     setBusy(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(address, {
-        redirectTo: `${window.location.origin}/auth`,
+        redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) throw error;
       setCooldown(30);
@@ -215,7 +215,7 @@ function AuthPage() {
     if (!address) return;
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(address, {
-        redirectTo: `${window.location.origin}/auth`,
+        redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) throw error;
       setCooldown(30);

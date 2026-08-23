@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as GroupsRouteImport } from './routes/groups'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as NewRouteImport } from './routes/new'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as TestRouteImport } from './routes/test'
 import { Route as DSlugRouteImport } from './routes/d.$slug'
 import { Route as GSlugRouteImport } from './routes/g.$slug'
@@ -46,6 +47,11 @@ const HomeRoute = HomeRouteImport.update({
 const NewRoute = NewRouteImport.update({
   id: '/new',
   path: '/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TestRoute = TestRouteImport.update({
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/groups': typeof GroupsRoute
   '/home': typeof HomeRoute
   '/new': typeof NewRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/test': typeof TestRoute
   '/d/$slug': typeof DSlugRoute
   '/g/$slug': typeof GSlugRoute
@@ -111,6 +118,7 @@ export interface FileRoutesByTo {
   '/groups': typeof GroupsRoute
   '/home': typeof HomeRoute
   '/new': typeof NewRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/test': typeof TestRoute
   '/d/$slug': typeof DSlugRoute
   '/g/$slug': typeof GSlugRoute
@@ -127,6 +135,7 @@ export interface FileRoutesById {
   '/groups': typeof GroupsRoute
   '/home': typeof HomeRoute
   '/new': typeof NewRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/test': typeof TestRoute
   '/d/$slug': typeof DSlugRoute
   '/g/$slug': typeof GSlugRoute
@@ -144,6 +153,7 @@ export interface FileRouteTypes {
     | '/groups'
     | '/home'
     | '/new'
+    | '/reset-password'
     | '/test'
     | '/d/$slug'
     | '/g/$slug'
@@ -159,6 +169,7 @@ export interface FileRouteTypes {
     | '/groups'
     | '/home'
     | '/new'
+    | '/reset-password'
     | '/test'
     | '/d/$slug'
     | '/g/$slug'
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/groups'
     | '/home'
     | '/new'
+    | '/reset-password'
     | '/test'
     | '/d/$slug'
     | '/g/$slug'
@@ -190,6 +202,7 @@ export interface RootRouteChildren {
   GroupsRoute: typeof GroupsRoute
   HomeRoute: typeof HomeRoute
   NewRoute: typeof NewRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   TestRoute: typeof TestRoute
   DSlugRoute: typeof DSlugRoute
   GSlugRoute: typeof GSlugRoute
@@ -235,6 +248,13 @@ declare module '@tanstack/react-router' {
       path: '/new'
       fullPath: '/new'
       preLoaderRoute: typeof NewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/test': {
@@ -302,6 +322,7 @@ const rootRouteChildren: RootRouteChildren = {
   GroupsRoute: GroupsRoute,
   HomeRoute: HomeRoute,
   NewRoute: NewRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   TestRoute: TestRoute,
   DSlugRoute: DSlugRoute,
   GSlugRoute: GSlugRoute,
