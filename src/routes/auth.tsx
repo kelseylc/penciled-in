@@ -1,5 +1,4 @@
 import { AppBar } from "@/components/AppBar";
-import { OtpInput } from "@/components/OtpInput";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
@@ -20,7 +19,7 @@ export const Route = createFileRoute("/auth")({
       {
         name: "description",
         content:
-          "Sign in with your email and password, or a 6-digit code. Responding to a plan never requires an account.",
+          "Sign in with your email and password. Responding to a plan never requires an account.",
       },
       { property: "og:title", content: "Organizer sign in — Penciled.in" },
       {
@@ -51,7 +50,7 @@ const emailSchema = z.string().trim().email("That doesn't look like an email").m
 const passwordSchema = z.string().min(8, "Passwords need at least 8 characters").max(200);
 const displayNameSchema = z.string().trim().min(1, "Add a name your group will recognize").max(80);
 
-type Mode = "login" | "signup" | "code" | "reset" | "verify-email";
+type Mode = "login" | "signup" | "forgot" | "reset" | "verify-email";
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -63,16 +62,11 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [busy, setBusy] = useState(false);
-
-  // Code-entry state (used for OTP sign-in, signup confirmation, and reset).
-  const [codeSent, setCodeSent] = useState(false);
-  const [codeType, setCodeType] = useState<"email" | "signup">("email");
-  const [afterCode, setAfterCode] = useState<"done" | "set-password">("done");
-  const [verifying, setVerifying] = useState(false);
-  const [resetKey, setResetKey] = useState(0);
   const [cooldown, setCooldown] = useState(0);
   const [settingPassword, setSettingPassword] = useState(false);
 
+  // Claim guest history and route onward once signed in — unless we're mid
+  // password reset, in which case stay on the reset form.
   useEffect(() => {
     if (loading || !session || settingPassword) return;
     const tokens = storedGuestTokens();
@@ -90,6 +84,18 @@ function AuthPage() {
     return () => clearTimeout(t);
   }, [cooldown]);
 
+  // Supabase fires PASSWORD_RECOVERY when the user lands back here after
+  // tapping the "reset password" link in their email. Show the reset form.
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setSettingPassword(true);
+        setMode("reset");
+      }
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
   function parseEmail(): string | null {
     const parsed = emailSchema.safeParse(email);
     if (!parsed.success) {
@@ -97,17 +103,6 @@ function AuthPage() {
       return null;
     }
     return parsed.data;
-  }
-
-  async function sendCode(address: string, createUser: boolean) {
-    const { error } = await supabase.auth.signInWithOtp({
-      email: address,
-      options: { shouldCreateUser: createUser },
-    });
-    if (error) throw error;
-    setCodeSent(true);
-    setCooldown(30);
-    setResetKey((k) => k + 1);
   }
 
   async function submitLogin(e: React.FormEvent) {
@@ -162,53 +157,25 @@ function AuthPage() {
     }
   }
 
-  async function startCodeSignIn() {
-    const address = parseEmail();
-    if (!address) return;
-    setBusy(true);
-    try {
-      setCodeType("email");
-      setAfterCode("done");
-      await sendCode(address, true);
-      setMode("code");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't send the code");
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function startPasswordReset() {
     const address = parseEmail();
     if (!address) return;
     setBusy(true);
     try {
-      setCodeType("email");
-      setAfterCode("set-password");
-      setSettingPassword(true);
-      await sendCode(address, false);
-      setMode("code");
+      const { error } = await supabase.auth.resetPasswordForEmail(address, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+      if (error) throw error;
+      setCooldown(30);
+      setMode("forgot");
     } catch (err) {
-      setSettingPassword(false);
-      toast.error(err instanceof Error ? err.message : "Couldn't send the code");
+      toast.error(err instanceof Error ? err.message : "Couldn't send the email");
     } finally {
       setBusy(false);
     }
   }
 
-  async function resend() {
-    if (cooldown > 0) return;
-    const address = parseEmail();
-    if (!address) return;
-    try {
-      await sendCode(address, codeType === "signup" ? false : afterCode !== "set-password");
-      toast.success("New code sent");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't resend the code");
-    }
-  }
-
-  /** Re-sends the signup confirmation link (not a code). */
+  /** Re-sends the signup confirmation link. */
   async function resendConfirmation() {
     if (cooldown > 0) return;
     const address = parseEmail();
@@ -227,28 +194,19 @@ function AuthPage() {
     }
   }
 
-
-  async function verify(code: string) {
-    const address = emailSchema.safeParse(email);
-    if (!address.success) return;
-    setVerifying(true);
+  async function resendReset() {
+    if (cooldown > 0) return;
+    const address = parseEmail();
+    if (!address) return;
     try {
-      const { error } = await supabase.auth.verifyOtp({
-        email: address.data,
-        token: code,
-        type: codeType,
+      const { error } = await supabase.auth.resetPasswordForEmail(address, {
+        redirectTo: `${window.location.origin}/auth`,
       });
       if (error) throw error;
-      if (afterCode === "set-password") {
-        setPassword("");
-        setMode("reset");
-      }
-      // Otherwise the session listener redirects to /home.
+      setCooldown(30);
+      toast.success("Reset email sent again");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "That code didn't work");
-      setResetKey((k) => k + 1);
-    } finally {
-      setVerifying(false);
+      toast.error(err instanceof Error ? err.message : "Couldn't resend the email");
     }
   }
 
@@ -274,14 +232,13 @@ function AuthPage() {
 
   function backToLogin() {
     setMode("login");
-    setCodeSent(false);
     setSettingPassword(false);
     setPassword("");
   }
 
   const heading =
-    mode === "code"
-      ? "Enter your code"
+    mode === "forgot"
+      ? "Check your email"
       : mode === "verify-email"
         ? "Confirm your email"
         : mode === "reset"
@@ -291,8 +248,8 @@ function AuthPage() {
             : "Welcome back";
 
   const sub =
-    mode === "code"
-      ? `We sent a 6-digit code to ${email.trim()}. It expires in 10 minutes.`
+    mode === "forgot"
+      ? `We sent a password reset link to ${email.trim()}. Tap it to choose a new password.`
       : mode === "verify-email"
         ? `We sent a confirmation email to ${email.trim()}. Tap the button in it to activate your account.`
         : mode === "reset"
@@ -341,13 +298,6 @@ function AuthPage() {
           </Button>
 
           <div className="flex flex-col gap-1 pt-2">
-            <button
-              type="button"
-              onClick={startCodeSignIn}
-              className="min-h-11 text-sm font-bold text-primary"
-            >
-              Email me a 6-digit code instead
-            </button>
             <button
               type="button"
               onClick={startPasswordReset}
@@ -452,17 +402,18 @@ function AuthPage() {
         </div>
       )}
 
-      {mode === "code" && codeSent && (
+      {mode === "forgot" && (
         <div className="mt-8 space-y-5">
-          <OtpInput onComplete={verify} disabled={verifying} resetKey={resetKey} />
-          {verifying && <p className="text-center text-sm text-muted-foreground">Checking…</p>}
+          <p className="rounded-2xl bg-card p-4 text-sm text-muted-foreground">
+            Tap the link in the email to pick a new password, then come back here.
+          </p>
           <button
             type="button"
-            onClick={resend}
+            onClick={resendReset}
             disabled={cooldown > 0}
             className="min-h-11 w-full text-sm font-bold text-primary disabled:text-muted-foreground"
           >
-            {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
+            {cooldown > 0 ? `Resend email in ${cooldown}s` : "Resend reset email"}
           </button>
           <Button
             variant="secondary"
