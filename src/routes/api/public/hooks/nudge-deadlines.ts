@@ -11,7 +11,8 @@ export const Route = createFileRoute("/api/public/hooks/nudge-deadlines")({
         const apiKey =
           request.headers.get("apikey") ??
           request.headers.get("authorization")?.replace("Bearer ", "");
-        const expected = process.env["SUPABASE_PUBLISHABLE_KEY"] ?? process.env["SUPABASE_ANON_KEY"];
+        const expected =
+          process.env["SUPABASE_PUBLISHABLE_KEY"] ?? process.env["SUPABASE_ANON_KEY"];
 
         if (!apiKey || !expected || apiKey !== expected) {
           return new Response(JSON.stringify({ error: "Unauthorized" }), {

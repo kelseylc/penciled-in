@@ -80,7 +80,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Penciled.in — group scheduling that ships a decision" },
-      { name: "description", content: "Group scheduling for adults with jobs and timezones. One link, 30-second responses, no signup to reply." },
+      {
+        name: "description",
+        content:
+          "Group scheduling for adults with jobs and timezones. One link, 30-second responses, no signup to reply.",
+      },
       { name: "author", content: "Lovable" },
       { property: "og:title", content: "Penciled.in" },
       { property: "og:description", content: "One link, 30-second responses, no signup to reply." },

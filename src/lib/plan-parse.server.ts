@@ -24,7 +24,10 @@ const SCHEMA = {
     template: { type: "string", enum: ["brunch", "dinner", "movie", "dnd", "trip", "hang"] },
     name: { type: "string" },
     mode: { type: "string", enum: ["one_off", "recurring"] },
-    cadence: { type: ["string", "null"], enum: ["weekly", "biweekly", "monthly", "quarterly", null] },
+    cadence: {
+      type: ["string", "null"],
+      enum: ["weekly", "biweekly", "monthly", "quarterly", null],
+    },
     days: { type: "array", items: { type: "integer", minimum: 0, maximum: 6 } },
     startAfter: { type: "number", minimum: 0, maximum: 24 },
     endBy: { type: "number", minimum: 0, maximum: 24 },
@@ -66,7 +69,11 @@ Rules:
 - name: a short human title like "Brunch with Iris". summary: one plain sentence describing the draft in the user's words.
 - missing: list pieces the description did not settle — "people" if no attendee names, "days"/"time"/"name"/"window" likewise. Never guess a person's name.`;
 
-export async function parsePlanText(text: string, timezone: string, today: string): Promise<PlanDraft> {
+export async function parsePlanText(
+  text: string,
+  timezone: string,
+  today: string,
+): Promise<PlanDraft> {
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new Error("AI is not configured for this project.");
 
@@ -97,7 +104,9 @@ export async function parsePlanText(text: string, timezone: string, today: strin
     const body = await res.text().catch(() => "");
     if (res.status === 429) throw new Error("Too many requests right now — try again in a moment.");
     if (res.status === 402)
-      throw new Error("This workspace is out of AI credits. Add credits to keep using the prompt box.");
+      throw new Error(
+        "This workspace is out of AI credits. Add credits to keep using the prompt box.",
+      );
     throw new Error(`Could not read that plan (${res.status}). ${body.slice(0, 200)}`);
   }
 
@@ -113,7 +122,10 @@ export async function parsePlanText(text: string, timezone: string, today: strin
   draft.days = [...new Set(draft.days)].filter((d) => d >= 0 && d <= 6).sort((a, b) => a - b);
   if (draft.endBy <= draft.startAfter) draft.endBy = Math.min(24, draft.startAfter + 3);
   if (draft.durationMinutes != null) {
-    draft.durationMinutes = Math.min(480, Math.max(30, Math.round(draft.durationMinutes / 30) * 30));
+    draft.durationMinutes = Math.min(
+      480,
+      Math.max(30, Math.round(draft.durationMinutes / 30) * 30),
+    );
   }
   if (draft.mode !== "recurring") draft.cadence = null;
   draft.people = (draft.people ?? []).slice(0, 50);

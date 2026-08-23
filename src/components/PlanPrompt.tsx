@@ -14,6 +14,31 @@ import { cn } from "@/lib/utils";
 const EXAMPLE =
   "Brunch with Iris on Saturdays or Sundays over the next 4 weeks, starting around 10:30 or 11am.";
 
+/**
+ * The Web Speech API is absent from TypeScript's DOM lib, so the shape this
+ * file actually uses is spelled out here rather than reached for as `any`.
+ */
+type SpeechAlternative = { transcript: string };
+type SpeechResultList = ArrayLike<ArrayLike<SpeechAlternative>>;
+type SpeechResultEvent = { results: SpeechResultList };
+type SpeechErrorEvent = { error?: string };
+
+interface SpeechRecognizer {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  onresult: ((event: SpeechResultEvent) => void) | null;
+  onerror: ((event: SpeechErrorEvent) => void) | null;
+  onend: (() => void) | null;
+  start(): void;
+  stop(): void;
+}
+
+type SpeechWindow = Window & {
+  SpeechRecognition?: new () => SpeechRecognizer;
+  webkitSpeechRecognition?: new () => SpeechRecognizer;
+};
+
 export function PlanPrompt() {
   const navigate = useNavigate();
   const parse = useServerFn(parsePlan);
@@ -21,10 +46,10 @@ export function PlanPrompt() {
   const [busy, setBusy] = useState(false);
   const [listening, setListening] = useState(false);
   const [voiceSupported, setVoiceSupported] = useState(false);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognizer | null>(null);
 
   useEffect(() => {
-    const w = window as any;
+    const w = window as SpeechWindow;
     setVoiceSupported(Boolean(w.SpeechRecognition || w.webkitSpeechRecognition));
     return () => {
       try {
@@ -40,7 +65,7 @@ export function PlanPrompt() {
       recognitionRef.current?.stop();
       return;
     }
-    const w = window as any;
+    const w = window as SpeechWindow;
     const Recognition = w.SpeechRecognition || w.webkitSpeechRecognition;
     if (!Recognition) return;
     const rec = new Recognition();
@@ -48,12 +73,13 @@ export function PlanPrompt() {
     rec.interimResults = true;
     rec.continuous = true;
     const base = text ? `${text.trim()} ` : "";
-    rec.onresult = (event: any) => {
+    rec.onresult = (event: SpeechResultEvent) => {
       let heard = "";
-      for (let i = 0; i < event.results.length; i++) heard += event.results[i][0].transcript;
+      for (let i = 0; i < event.results.length; i++)
+        heard += event.results[i]?.[0]?.transcript ?? "";
       setText(base + heard);
     };
-    rec.onerror = (event: any) => {
+    rec.onerror = (event: SpeechErrorEvent) => {
       setListening(false);
       if (event?.error !== "aborted") toast.error("Couldn't hear that — try typing instead.");
     };
@@ -112,7 +138,9 @@ export function PlanPrompt() {
             aria-pressed={listening}
             className={cn(
               "grid size-14 shrink-0 place-items-center rounded-2xl border-2",
-              listening ? "animate-pulse border-primary bg-primary/15" : "border-border bg-secondary",
+              listening
+                ? "animate-pulse border-primary bg-primary/15"
+                : "border-border bg-secondary",
             )}
           >
             {listening ? <Square className="size-5 text-primary" /> : <Mic className="size-5" />}

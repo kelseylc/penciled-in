@@ -99,8 +99,8 @@ function TestModePage() {
       <main className="mx-auto w-full max-w-md px-5 pb-24 pt-4">
         <h1 className="text-2xl font-bold tracking-tight">Test mode</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Seeds a full demo dataset, signs you in as a demo organizer, and links every screen in
-          the app so you can audit them end to end.
+          Seeds a full demo dataset, signs you in as a demo organizer, and links every screen in the
+          app so you can audit them end to end.
         </p>
 
         <Button
@@ -139,7 +139,11 @@ function TestModePage() {
                 label="Review time options"
                 hint="Jumps to Step 7 with a prefilled plan — edit, remove, add slots"
               />
-              <Row href="/home" label="My events" hint="Next session, at-risk banner, empty state" />
+              <Row
+                href="/home"
+                label="My events"
+                hint="Next session, at-risk banner, empty state"
+              />
               <Row href="/groups" label="My groups" hint="Saved groups list + create" />
             </section>
 
@@ -148,8 +152,16 @@ function TestModePage() {
                 Accounts
               </h2>
               <Row href="/auth" label="Sign in" hint="Email + password" />
-              <Row href="/auth?mode=signup" label="Create account" hint="Ends on confirm-email screen" />
-              <Row href="/auth?mode=forgot" label="Forgot password" hint="Email form, sends the reset link" />
+              <Row
+                href="/auth?mode=signup"
+                label="Create account"
+                hint="Ends on confirm-email screen"
+              />
+              <Row
+                href="/auth?mode=forgot"
+                label="Forgot password"
+                hint="Email form, sends the reset link"
+              />
               <Row
                 href="/reset-password"
                 label="Set a new password"
@@ -161,7 +173,11 @@ function TestModePage() {
               <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
                 One-off plan — collecting
               </h2>
-              <Row href={`/share/${oneOff?.slug}`} label="Share screen" hint="Link + chat message" />
+              <Row
+                href={`/share/${oneOff?.slug}`}
+                label="Share screen"
+                hint="Link + chat message"
+              />
               <Row
                 href={`/p/${oneOff?.slug}?t=${oneOff?.participants[2]?.token ?? ""}`}
                 label="Respond as guest"
@@ -175,16 +191,32 @@ function TestModePage() {
               <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
                 One-off plan — locked
               </h2>
-              <Row href={`/d/${lockedOne?.slug}`} label="Decision view" hint=".ics + copy summary" />
-              <Row href={`/results/${lockedOne?.slug}`} label="Results (locked)" hint="Post-lock state" />
+              <Row
+                href={`/d/${lockedOne?.slug}`}
+                label="Decision view"
+                hint=".ics + copy summary"
+              />
+              <Row
+                href={`/results/${lockedOne?.slug}`}
+                label="Results (locked)"
+                hint="Post-lock state"
+              />
             </section>
 
             <section className="space-y-2">
               <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
                 Recurring plan — locked cadence
               </h2>
-              <Row href={`/d/${recurring?.slug}`} label="Decision view" hint="Recurring .ics (RRULE)" />
-              <Row href={`/results/${recurring?.slug}`} label="Cadence results" hint="Top cadences" />
+              <Row
+                href={`/d/${recurring?.slug}`}
+                label="Decision view"
+                hint="Recurring .ics (RRULE)"
+              />
+              <Row
+                href={`/results/${recurring?.slug}`}
+                label="Cadence results"
+                hint="Top cadences"
+              />
               {seed.occurrences.map((o, i) => (
                 <Row
                   key={o.id}

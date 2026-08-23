@@ -59,9 +59,7 @@ export function summarizeAnswers(
     const day = WEEKDAYS[Number(dayIdx)];
     const qualifier = value.yes === value.total ? "every" : value.yes > 1 ? "most" : "one";
     bullets.push(
-      qualifier === "one"
-        ? `Free one ${day} ${part}`
-        : `Free ${qualifier} ${day} ${part}s`,
+      qualifier === "one" ? `Free one ${day} ${part}` : `Free ${qualifier} ${day} ${part}s`,
     );
   }
 

@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A newer push to the same branch makes the older run pointless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: typecheck, tests, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # --frozen-lockfile so CI fails on a stale lockfile instead of quietly
+      # resolving something different from what everyone else is running.
+      - run: bun install --frozen-lockfile
+
+      # Warnings stay visible without failing the run; errors are the gate.
+      - run: bun run lint
+
+      - run: bun run typecheck
+
+      - run: bun run test
+
+      # Catches what tsc can't: bundling, SSR entry, and route-tree wiring.
+      # The build only needs these to be present and well-formed — nothing here
+      # talks to Supabase, so they are placeholders, not secrets.
+      - run: bun run build
+        env:
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_placeholder
+          SUPABASE_URL: https://placeholder.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: sb_publishable_placeholder

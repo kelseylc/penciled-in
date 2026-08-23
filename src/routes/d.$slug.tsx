@@ -99,7 +99,9 @@ function LockedPage() {
     return data.slotStates[participantId] ?? "unknown";
   };
 
-  const attending = data.participants.filter((p) => ["in", "late", "yes"].includes(statusFor(p.id)));
+  const attending = data.participants.filter((p) =>
+    ["in", "late", "yes"].includes(statusFor(p.id)),
+  );
   const outList = data.participants.filter((p) => ["out", "no"].includes(statusFor(p.id)));
 
   const zones = Array.from(
@@ -239,8 +241,6 @@ function LockedPage() {
       )}
 
       <AddToHomeScreen />
-
-
 
       <div className="sticky bottom-0 mt-8 space-y-2 bg-gradient-to-t from-background via-background pb-6 pt-4">
         <Button className="h-14 w-full rounded-2xl text-base" onClick={calendarFile}>

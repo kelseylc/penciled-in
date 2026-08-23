@@ -199,10 +199,7 @@ function advance(date: Date, cadence: Cadence): Date {
   return addMonths(date, 3);
 }
 
-function stateFromDefaults(
-  p: SolverParticipant,
-  localDate: Date,
-): SlotState | undefined {
+function stateFromDefaults(p: SolverParticipant, localDate: Date): SlotState | undefined {
   const iso = format(localDate, "yyyy-MM-dd");
   if (p.blackout_dates?.includes(iso)) return "no";
   const pattern = p.weekly_pattern?.[String(localDate.getDay())];
@@ -290,10 +287,7 @@ export function enumerateCadences(
 
     for (let i = 0; i < total; i += 1) {
       const day = format(cursor, "yyyy-MM-dd");
-      const utc = fromZonedTime(
-        `${day}T${pair.startTime}:00`,
-        timezone,
-      );
+      const utc = fromZonedTime(`${day}T${pair.startTime}:00`, timezone);
       occurrences.push(utc.toISOString());
 
       let yes = 0;
@@ -301,8 +295,7 @@ export function enumerateCadences(
       let requiredOk = true;
       for (const p of participants) {
         const explicit = pairStates.get(day)?.get(p.id);
-        const state =
-          explicit ?? stateFromDefaults(p, cursor) ?? usual.get(p.id) ?? undefined;
+        const state = explicit ?? stateFromDefaults(p, cursor) ?? usual.get(p.id) ?? undefined;
         if (state === "yes") yes += 1;
         else if (state === "maybe") maybe += 1;
         if (state === "yes" || state === "maybe") availableAtLeastOnce.add(p.id);

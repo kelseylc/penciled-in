@@ -53,7 +53,10 @@ const CHIP: Record<string, { label: string; className: string }> = {
     className: "bg-destructive/15 text-destructive border-destructive/40",
   },
   pending: { label: "Pending", className: "bg-muted text-muted-foreground border-border" },
-  repolling: { label: "Re-polling", className: "bg-accent/20 text-accent-foreground border-border" },
+  repolling: {
+    label: "Re-polling",
+    className: "bg-accent/20 text-accent-foreground border-border",
+  },
   cancelled: { label: "Cancelled", className: "bg-muted text-muted-foreground border-border" },
 };
 
@@ -99,8 +102,7 @@ function HomePage() {
   if (query.isLoading) return <Shell>Loading your sessions…</Shell>;
 
   const all = [...(query.data ?? [])].sort(
-    (a, b) =>
-      new Date(a.scheduled_start_utc).getTime() - new Date(b.scheduled_start_utc).getTime(),
+    (a, b) => new Date(a.scheduled_start_utc).getTime() - new Date(b.scheduled_start_utc).getTime(),
   );
   const next = all[0];
   if (!next) {
@@ -137,9 +139,7 @@ function HomePage() {
     <Shell>
       <header className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Next up</h1>
-        <p className="text-sm text-muted-foreground">
-          Your next session, in your local time.
-        </p>
+        <p className="text-sm text-muted-foreground">Your next session, in your local time.</p>
       </header>
 
       <section>
@@ -226,10 +226,7 @@ function OccurrenceCard({
               Only {occ.attending} of {occ.totalParticipants} confirmed for{" "}
               {format(toZonedTime(new Date(occ.scheduled_start_utc), tz), "MMM d")}.
               {occ.requiredOut.length > 0 && (
-                <>
-                  {" "}
-                  {listNames(occ.requiredOut)} (required) can't make it.
-                </>
+                <> {listNames(occ.requiredOut)} (required) can't make it.</>
               )}
             </span>
           </p>
@@ -237,11 +234,7 @@ function OccurrenceCard({
             Just this session — your locked cadence stays put.
           </p>
           <div className="mt-3 space-y-2">
-            <Button
-              className="h-12 w-full"
-              disabled={pending}
-              onClick={() => onAct("repoll")}
-            >
+            <Button className="h-12 w-full" disabled={pending} onClick={() => onAct("repoll")}>
               Re-poll this session
             </Button>
             <div className="flex gap-2">

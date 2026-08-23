@@ -19,7 +19,11 @@ export function toIcsUtc(iso: string): string {
 }
 
 function escapeText(value: string): string {
-  return value.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,")
+    .replace(/\n/g, "\\n");
 }
 
 /** Fold long lines at 75 octets, per RFC 5545. */
