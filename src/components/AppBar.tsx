@@ -1,5 +1,5 @@
 import { Link, useRouter } from "@tanstack/react-router";
-import { ArrowLeft, CalendarPlus, Home, LogIn, LogOut, Menu, Users } from "lucide-react";
+import { ArrowLeft, CalendarCheck, CalendarPlus, LogIn, LogOut, Menu, Users } from "lucide-react";
 
 import {
   DropdownMenu,
@@ -23,7 +23,7 @@ export function AppBar({ back = true, title }: Props) {
   const { session } = useAuth();
 
   return (
-    <div className="sticky top-0 z-40 mb-4 flex items-center gap-2 border-b border-border/60 bg-background/90 py-2 backdrop-blur">
+    <div className="sticky top-0 z-40 mb-4 flex items-center gap-1 border-b border-border/60 bg-background/90 py-2 backdrop-blur">
       {back && (
         <button
           type="button"
@@ -45,6 +45,15 @@ export function AppBar({ back = true, title }: Props) {
         {title ?? "Penciled.in"}
       </Link>
 
+      {!session && (
+        <Link
+          to="/auth"
+          className="flex min-h-11 shrink-0 items-center rounded-xl px-3 text-sm font-semibold text-foreground hover:bg-accent/40"
+        >
+          Sign in
+        </Link>
+      )}
+
       <DropdownMenu>
         <DropdownMenuTrigger
           aria-label="Open menu"
@@ -60,12 +69,12 @@ export function AppBar({ back = true, title }: Props) {
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link to="/home" className="cursor-pointer">
-              <Users className="mr-2 size-4" aria-hidden /> Your sessions
+              <CalendarCheck className="mr-2 size-4" aria-hidden /> Your events
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link to="/" className="cursor-pointer">
-              <Home className="mr-2 size-4" aria-hidden /> Home
+            <Link to="/groups" className="cursor-pointer">
+              <Users className="mr-2 size-4" aria-hidden /> My groups
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
@@ -81,7 +90,7 @@ export function AppBar({ back = true, title }: Props) {
           ) : (
             <DropdownMenuItem asChild>
               <Link to="/auth" className="cursor-pointer">
-                <LogIn className="mr-2 size-4" aria-hidden /> Organizer sign in
+                <LogIn className="mr-2 size-4" aria-hidden /> Sign in
               </Link>
             </DropdownMenuItem>
           )}
