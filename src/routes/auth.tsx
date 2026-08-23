@@ -51,7 +51,7 @@ const emailSchema = z.string().trim().email("That doesn't look like an email").m
 const passwordSchema = z.string().min(8, "Passwords need at least 8 characters").max(200);
 const displayNameSchema = z.string().trim().min(1, "Add a name your group will recognize").max(80);
 
-type Mode = "login" | "signup" | "code" | "reset";
+type Mode = "login" | "signup" | "code" | "reset" | "verify-email";
 
 function AuthPage() {
   const navigate = useNavigate();
