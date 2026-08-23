@@ -1,0 +1,9 @@
+Confirm your email
+
+One tap and your Penciled.in account is ready. This link expires in 24 hours.
+
+{{ .ConfirmationURL }}
+
+Didn't sign up? You can ignore this email.
+
+-- Penciled.in
