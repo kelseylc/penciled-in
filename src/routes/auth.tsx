@@ -146,16 +146,15 @@ function AuthPage() {
       const { data, error } = await supabase.auth.signUp({
         email: address,
         password: pw.data,
-        options: { data: { display_name: name.data } },
+        options: {
+          data: { display_name: name.data },
+          emailRedirectTo: `${window.location.origin}/auth`,
+        },
       });
       if (error) throw error;
       if (data.session) return; // Auto-confirm on: the listener takes it from here.
-      setCodeType("signup");
-      setAfterCode("done");
-      setCodeSent(true);
       setCooldown(30);
-      setResetKey((k) => k + 1);
-      setMode("code");
+      setMode("verify-email");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Couldn't create your account");
     } finally {
