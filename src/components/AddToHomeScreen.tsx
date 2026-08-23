@@ -50,8 +50,8 @@ export function AddToHomeScreen() {
             Add this to your home screen and you'll stay signed in.
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            On iPhone: tap <span className="font-medium text-foreground">Share</span> in Safari, then{" "}
-            <span className="font-medium text-foreground">Add to Home Screen</span>.
+            On iPhone: tap <span className="font-medium text-foreground">Share</span> in Safari,
+            then <span className="font-medium text-foreground">Add to Home Screen</span>.
           </p>
         </div>
         <button

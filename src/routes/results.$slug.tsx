@@ -178,8 +178,8 @@ function ResultsPage() {
       <header className="mb-5">
         <h1 className="text-2xl font-bold tracking-tight">{data.project.name}</h1>
         <p className="text-sm text-muted-foreground">
-          {data.participants.filter((p) => p.responded).length} of {total} responded · times in
-          your local zone
+          {data.participants.filter((p) => p.responded).length} of {total} responded · times in your
+          local zone
         </p>
       </header>
 
@@ -200,9 +200,7 @@ function ResultsPage() {
 
       {canDecide && locked && !data.project.group_id && !savedGroupSlug && groupPromptOpen && (
         <div className="mb-5 rounded-2xl border border-border bg-card p-4">
-          <p className="text-sm font-semibold">
-            Save these {total} people as a group?
-          </p>
+          <p className="text-sm font-semibold">Save these {total} people as a group?</p>
           <p className="mt-1 text-sm text-muted-foreground">
             Next time you can skip straight past the awkward name-typing part.
           </p>
@@ -220,11 +218,7 @@ function ResultsPage() {
             >
               Save group
             </Button>
-            <Button
-              variant="secondary"
-              className="h-12"
-              onClick={() => setGroupPromptOpen(false)}
-            >
+            <Button variant="secondary" className="h-12" onClick={() => setGroupPromptOpen(false)}>
               Not now
             </Button>
           </div>
@@ -365,9 +359,7 @@ function ResultsPage() {
 function missingLine(s: SlotScore): string {
   const parts: string[] = [];
   if (s.noNames.length > 0) {
-    parts.push(
-      `${listNames(s.noNames)} can't make it${s.noNames.length === 1 ? "." : "."}`,
-    );
+    parts.push(`${listNames(s.noNames)} can't make it${s.noNames.length === 1 ? "." : "."}`);
   }
   if (s.unknownNames.length > 0) {
     parts.push(

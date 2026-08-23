@@ -47,9 +47,7 @@ export const getResults = createServerFn({ method: "POST" })
 
     const { data: project } = await sb
       .from("projects")
-      .select(
-        "id, name, slug, status, mode, cadence, quorum_min, duration_minutes, group_id",
-      )
+      .select("id, name, slug, status, mode, cadence, quorum_min, duration_minutes, group_id")
       .eq("slug", data.slug)
       .maybeSingle();
     if (!project) throw new Error("Plan not found");

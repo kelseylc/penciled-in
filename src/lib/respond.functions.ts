@@ -211,7 +211,12 @@ export const joinProject = createServerFn({ method: "POST" })
       .single();
     if (error || !created) throw new Error(error?.message ?? "Could not add you to this plan");
 
-    return { participant_id: created.id, token: created.token, returning: false, hadResponses: false };
+    return {
+      participant_id: created.id,
+      token: created.token,
+      returning: false,
+      hadResponses: false,
+    };
   });
 
 export const submitResponses = createServerFn({ method: "POST" })

@@ -144,7 +144,10 @@ function RespondPage() {
 
   const grouped = useMemo(() => {
     if (!bundle) return [];
-    const map = new Map<string, { label: string; weekend: boolean; slots: RespondBundle["slots"] }>();
+    const map = new Map<
+      string,
+      { label: string; weekend: boolean; slots: RespondBundle["slots"] }
+    >();
     for (const slot of bundle.slots) {
       const local = toZonedTime(new Date(slot.start_utc), timezone);
       const key = format(local, "yyyy-MM-dd");
@@ -171,8 +174,7 @@ function RespondPage() {
   const outstanding = bundle?.participants.filter((p) => !p.responded) ?? [];
 
   const joinMutation = useMutation({
-    mutationFn: async () =>
-      join({ data: { slug, name: name.trim(), timezone } }),
+    mutationFn: async () => join({ data: { slug, name: name.trim(), timezone } }),
     onSuccess: (res) => {
       setToken(res.token);
       writeGuestToken(slug, res.token);
@@ -240,9 +242,7 @@ function RespondPage() {
     return (
       <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col items-center justify-center px-5 text-center">
         <h1 className="text-2xl font-black">This link isn't working</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Ask whoever sent it to share it again.
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">Ask whoever sent it to share it again.</p>
       </main>
     );
   }
@@ -322,7 +322,10 @@ function RespondPage() {
           <div className="flex flex-wrap gap-3 text-xs">
             <Legend className="bg-emerald-500 text-white" label="Yes" />
             <Legend className="bg-amber-400 text-amber-950" label="Maybe" />
-            <Legend className="border-2 border-muted-foreground/50 text-muted-foreground" label="No" />
+            <Legend
+              className="border-2 border-muted-foreground/50 text-muted-foreground"
+              label="No"
+            />
             <Legend className="border border-border bg-card" label="Not set" />
           </div>
         </div>
