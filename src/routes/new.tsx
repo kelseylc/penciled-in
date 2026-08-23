@@ -32,9 +32,9 @@ import {
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/new")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    draft: search.draft ? 1 : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { draft?: 1 } =>
+    search["draft"] ? { draft: 1 } : {},
+
   head: () => ({
     meta: [
       { title: "New plan — Penciled.in" },
