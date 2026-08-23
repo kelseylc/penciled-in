@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { readGuestToken, writeGuestToken } from "@/lib/guest-token";
 import { getOccurrenceGuest, submitOccurrenceRsvp } from "@/lib/occurrences.functions";
 
 export const Route = createFileRoute("/o/$id")({
