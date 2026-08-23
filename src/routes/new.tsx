@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { takeDraft } from "@/lib/plan-draft";
 import { createProject } from "@/lib/projects.functions";
+import { saveGroupFromProject } from "@/lib/groups.functions";
 
 import { effectiveDurationMinutes, generateCandidateSlots, MAX_SLOTS } from "@/lib/slots";
 import {

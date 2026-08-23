@@ -8,6 +8,7 @@ import { useMemo } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { GroupManage } from "@/components/GroupManage";
 import { getGroupPage, type GroupPage } from "@/lib/groups.functions";
 
 export const Route = createFileRoute("/g/$slug")({
@@ -100,6 +101,8 @@ function GroupPageRoute() {
           </Link>
         ))}
       </section>
+
+      <GroupManage slug={slug} />
 
       <div className="sticky bottom-0 mt-8 bg-gradient-to-t from-background via-background pb-6 pt-4">
         <Button variant="secondary" className="h-14 w-full rounded-2xl text-base" onClick={copyLink}>
