@@ -38,7 +38,7 @@ function Index() {
       </h1>
       <p className="mt-4 text-base text-muted-foreground">
         Organize an event, share one link to attendees, find the dates that work, lock it in. No
-        account or calendar syncing needed.
+        calendar syncing needed.
       </p>
 
       <div className="mt-7">
