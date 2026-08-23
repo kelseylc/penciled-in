@@ -1,8 +1,8 @@
 Confirm your email
 
-One tap and your Penciled.in account is ready. This link expires in 24 hours.
+Enter this code in Penciled.in to finish creating your account. It expires in 10 minutes.
 
-{{ .ConfirmationURL }}
+{{ .Token }}
 
 Didn't sign up? You can ignore this email.
 
