@@ -31,9 +31,10 @@ export const Route = createFileRoute("/auth")({
     ],
   }),
   // ?mode=signup|forgot deep-links a specific screen (used by /test auditing).
-  validateSearch: (search: Record<string, unknown>) => ({
-    mode: search.mode === "signup" || search.mode === "forgot" ? search.mode : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { mode?: "signup" | "forgot" } => {
+    const m = search["mode"];
+    return m === "signup" || m === "forgot" ? { mode: m } : {};
+  },
   component: AuthPage,
 });
 
@@ -61,7 +62,7 @@ function AuthPage() {
   const { session, loading } = useAuth();
   const claim = useServerFn(claimParticipants);
 
-  const { mode: modeParam } = Route.useSearch();
+  const { mode: modeParam } = Route.useSearch() as { mode?: Mode };
   const [mode, setMode] = useState<Mode>(modeParam ?? "login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
