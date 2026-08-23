@@ -71,6 +71,7 @@ function NewProject() {
   const navigate = useNavigate();
   const { session, loading } = useAuth();
   const create = useServerFn(createProject);
+  const saveGroup = useServerFn(saveGroupFromProject);
   const tz = useMemo(
     () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
     [],
@@ -94,6 +95,8 @@ function NewProject() {
   const [groupId, setGroupId] = useState<string | null>(null);
   const [people, setPeople] = useState<Person[]>([]);
   const [newName, setNewName] = useState("");
+  const [saveAsGroup, setSaveAsGroup] = useState(false);
+  const [saveGroupName, setSaveGroupName] = useState("");
   const [quorum, setQuorum] = useState(2);
   const [quorumTouched, setQuorumTouched] = useState(false);
   const [hasDeadline, setHasDeadline] = useState(true);
@@ -262,6 +265,14 @@ function NewProject() {
           slots: generation.slots,
         },
       });
+      if (saveAsGroup && !groupId && saveGroupName.trim() && session) {
+        try {
+          await saveGroup({ data: { slug: result.slug, name: saveGroupName.trim() } });
+          toast.success(`Saved “${saveGroupName.trim()}” — reuse these people next time.`);
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : "Couldn't save that group");
+        }
+      }
       if (generation.widened) {
         toast.info("That window was huge, so start times are spaced further apart.");
       }
@@ -639,6 +650,37 @@ function NewProject() {
                 </li>
               ))}
             </ul>
+
+            {!groupId && people.length > 1 && (
+              <div className="mt-5 rounded-2xl border border-border p-4">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold">Save these people as a group</p>
+                    <p className="text-xs text-muted-foreground">
+                      {session
+                        ? "Reuse this crew for future plans and hand out co-organizer access."
+                        : "Sign in first to keep this crew for next time."}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={saveAsGroup}
+                    disabled={!session}
+                    onCheckedChange={(c) => {
+                      setSaveAsGroup(c);
+                      if (c && !saveGroupName) setSaveGroupName(name.trim() ? `${name.trim()} crew` : "");
+                    }}
+                  />
+                </div>
+                {saveAsGroup && (
+                  <Input
+                    className="mt-3 h-12"
+                    placeholder="Group name"
+                    value={saveGroupName}
+                    onChange={(e) => setSaveGroupName(e.target.value)}
+                  />
+                )}
+              </div>
+            )}
           </section>
         )}
 
