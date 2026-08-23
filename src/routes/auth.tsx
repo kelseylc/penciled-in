@@ -55,7 +55,12 @@ export const Route = createFileRoute("/auth")({
 });
 
 /** Email is the only login identifier. Names collide; phone needs SMS. */
-const emailSchema = z.string().trim().email("That doesn't look like an email").max(255);
+const emailSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .email("That doesn't look like an email")
+  .max(255);
 const passwordSchema = z.string().min(8, "Passwords need at least 8 characters").max(200);
 const displayNameSchema = z.string().trim().min(1, "Add a name your group will recognize").max(80);
 
@@ -70,6 +75,33 @@ let pendingLinkError = readAuthErrorFromUrl();
  * the address we sent to, which a deep link could never supply.
  */
 type Sent = { kind: "confirm" | "reset"; email: string };
+
+const SENT_KEY = "penciled:auth-sent";
+/** Long enough to check a phone, short enough not to greet a new visit. */
+const SENT_TTL_MS = 30 * 60 * 1000;
+
+function rememberSent(next: Sent | null) {
+  try {
+    if (!next) sessionStorage.removeItem(SENT_KEY);
+    else sessionStorage.setItem(SENT_KEY, JSON.stringify({ ...next, at: Date.now() }));
+  } catch {
+    /* storage blocked — the screen still works, it just won't survive a reload */
+  }
+}
+
+function recallSent(): Sent | null {
+  try {
+    const raw = sessionStorage.getItem(SENT_KEY);
+    if (!raw) return null;
+    const saved = JSON.parse(raw) as Partial<Sent> & { at?: number };
+    const fresh = typeof saved.at === "number" && Date.now() - saved.at < SENT_TTL_MS;
+    if (!fresh || typeof saved.email !== "string") return null;
+    if (saved.kind !== "confirm" && saved.kind !== "reset") return null;
+    return { kind: saved.kind, email: saved.email };
+  } catch {
+    return null;
+  }
+}
 
 type FieldErrors = {
   displayName?: string;
@@ -112,6 +144,7 @@ function AuthPage() {
   // Claim guest history and route onward once signed in.
   useEffect(() => {
     if (loading || !session) return;
+    rememberSent(null);
     const tokens = storedGuestTokens();
     claim({ data: { tokens } })
       .then((r) => {
@@ -129,9 +162,21 @@ function AuthPage() {
     pendingLinkError = null;
   }, []);
 
-  // A Back that changes the screen should drop the "we sent it" state with it.
   useEffect(() => {
+    const remembered = recallSent();
+    if (remembered) setSent(remembered);
+  }, []);
+
+  // A Back that changes the screen should drop the "we sent it" state with it,
+  // but not on the first pass, which would undo the restore above.
+  const firstScreen = useRef(true);
+  useEffect(() => {
+    if (firstScreen.current) {
+      firstScreen.current = false;
+      return;
+    }
     setSent(null);
+    rememberSent(null);
     setErrors({});
   }, [modeParam]);
 
@@ -163,6 +208,7 @@ function AuthPage() {
     setPassword("");
     setConfirm("");
     setSent(null);
+    rememberSent(null);
     setErrors({});
     setUnconfirmedHint(false);
     setExistingAccount(false);
@@ -283,6 +329,7 @@ function AuthPage() {
       }
       setCooldown(30);
       setSent({ kind: "confirm", email: parsed.data });
+      rememberSent({ kind: "confirm", email: parsed.data });
       setBusy(false);
     } catch (err) {
       setErrors({ form: err instanceof Error ? err.message : "Couldn't create your account" });
@@ -303,6 +350,7 @@ function AuthPage() {
       if (error) throw error;
       setCooldown(30);
       setSent({ kind: "reset", email: address });
+      rememberSent({ kind: "reset", email: address });
     } catch (err) {
       setErrors({ form: err instanceof Error ? err.message : "Couldn't send the email" });
     } finally {

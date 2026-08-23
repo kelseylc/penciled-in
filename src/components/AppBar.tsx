@@ -25,6 +25,8 @@ export function AppBar({ back = true, title }: Props) {
   // Sign in from wherever they are and come back to it, not to /home.
   const here = useRouterState({ select: (s) => s.location.href });
   const redirect = safeRedirect(here);
+  // Offering "Sign in" on the sign-in screen just competes with the form.
+  const onAuthScreen = /^\/(auth|reset-password)\b/.test(here);
 
   return (
     <div className="sticky top-0 z-40 mb-4 flex items-center gap-1 border-b border-border/60 bg-background/90 py-2 backdrop-blur">
@@ -49,7 +51,7 @@ export function AppBar({ back = true, title }: Props) {
         {title ?? "Penciled.in"}
       </Link>
 
-      {!session && (
+      {!session && !onAuthScreen && (
         <Link
           to="/auth"
           search={{ ...(redirect ? { redirect } : {}) }}
@@ -92,7 +94,7 @@ export function AppBar({ back = true, title }: Props) {
             >
               <LogOut className="mr-2 size-4" aria-hidden /> Sign out
             </DropdownMenuItem>
-          ) : (
+          ) : onAuthScreen ? null : (
             <DropdownMenuItem asChild>
               <Link
                 to="/auth"

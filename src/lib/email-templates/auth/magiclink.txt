@@ -1,9 +1,0 @@
-Sign in to Penciled.in
-
-Open this link to sign in. It expires in 1 hour and can only be used once.
-
-{{ .ConfirmationURL }}
-
-Didn't ask for this? You can ignore this email.
-
--- Penciled.in

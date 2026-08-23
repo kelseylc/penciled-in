@@ -1,17 +1,24 @@
 # Auth email templates
 
-Dark-mode-safe templates for the six Supabase auth email types. Each type has an
-HTML part and a matching `.txt` part — always send both (multipart/alternative),
-never HTML only.
+Dark-mode-safe templates for the Supabase auth emails this project can actually
+send. Each type has an HTML part and a matching `.txt` part — always send both
+(multipart/alternative), never HTML only.
 
-| Type | Files |
-| --- | --- |
-| Sign-in link | `magiclink.html` / `.txt` |
-| Signup confirmation | `signup.html` / `.txt` |
-| Password recovery | `recovery.html` / `.txt` |
-| Invite | `invite.html` / `.txt` |
-| Email change | `email_change.html` / `.txt` |
-| Reauthentication (OTP) | `reauthentication.html` / `.txt` |
+| Type | Files | Sent when |
+| --- | --- | --- |
+| Signup confirmation | `signup.html` / `.txt` | someone creates an account |
+| Password recovery | `recovery.html` / `.txt` | someone asks to reset their password |
+| Invite | `invite.html` / `.txt` | an admin invites a user from the Supabase dashboard |
+| Email change | `email_change.html` / `.txt` | a user changes the address on their account |
+
+The first two are triggered by the app. The last two are not: no code path
+reaches them today, and they are kept because the dashboard can send them
+without any app code.
+
+Magic-link and reauthentication templates used to live here. Nothing could
+reach them — the app has no `signInWithOtp` or `reauthenticate` call, and
+magic-link sign-in was considered and turned down — so they were removed
+rather than left to rot. They are in git history if that decision changes.
 
 ## Rules these follow (keep them when editing)
 

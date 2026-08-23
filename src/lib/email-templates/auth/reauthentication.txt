@@ -1,9 +1,0 @@
-Your sign-in code
-
-Enter this code in Penciled.in. It expires in 10 minutes.
-
-{{ .Token }}
-
-Didn't ask for this? You can ignore this email.
-
--- Penciled.in
