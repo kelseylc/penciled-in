@@ -124,7 +124,7 @@ function TestModePage() {
               <Row href="/" label="Landing" hint="Home page and CTAs" />
               <Row href="/new" label="Create a plan" hint="6-step wizard" />
               <Row href="/home" label="Your sessions" hint="Upcoming occurrences, at-risk banner" />
-              <Row href="/auth" label="Sign in" hint="Magic link screen" />
+              <Row href="/auth" label="Sign in" hint="Email code sign-in" />
             </section>
 
             <section className="space-y-2">

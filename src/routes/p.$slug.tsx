@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { OtpInput } from "@/components/OtpInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -93,6 +94,12 @@ function RespondPage() {
   const [upsellSent, setUpsellSent] = useState(false);
   const [upsellResetKey, setUpsellResetKey] = useState(0);
   const [upsellCooldown, setUpsellCooldown] = useState(0);
+
+  useEffect(() => {
+    if (upsellCooldown <= 0) return;
+    const t = setTimeout(() => setUpsellCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [upsellCooldown]);
 
   useEffect(() => {
     setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
