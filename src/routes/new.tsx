@@ -30,6 +30,9 @@ import {
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/new")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    draft: search.draft ? 1 : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "New plan — Penciled.in" },
@@ -47,6 +50,7 @@ export const Route = createFileRoute("/new")({
   }),
   component: NewProject,
 });
+
 
 type Person = {
   key: string;
