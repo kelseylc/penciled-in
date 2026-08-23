@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as GroupsRouteImport } from './routes/groups'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as NewRouteImport } from './routes/new'
 import { Route as TestRouteImport } from './routes/test'
@@ -30,6 +31,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GroupsRoute = GroupsRouteImport.update({
+  id: '/groups',
+  path: '/groups',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HomeRoute = HomeRouteImport.update({
@@ -87,6 +93,7 @@ const ApiPublicHooksNudgeDeadlinesRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/groups': typeof GroupsRoute
   '/home': typeof HomeRoute
   '/new': typeof NewRoute
   '/test': typeof TestRoute
@@ -101,6 +108,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/groups': typeof GroupsRoute
   '/home': typeof HomeRoute
   '/new': typeof NewRoute
   '/test': typeof TestRoute
@@ -116,6 +124,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/groups': typeof GroupsRoute
   '/home': typeof HomeRoute
   '/new': typeof NewRoute
   '/test': typeof TestRoute
@@ -132,6 +141,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/groups'
     | '/home'
     | '/new'
     | '/test'
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/groups'
     | '/home'
     | '/new'
     | '/test'
@@ -160,6 +171,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/auth'
+    | '/groups'
     | '/home'
     | '/new'
     | '/test'
@@ -175,6 +187,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
+  GroupsRoute: typeof GroupsRoute
   HomeRoute: typeof HomeRoute
   NewRoute: typeof NewRoute
   TestRoute: typeof TestRoute
@@ -201,6 +214,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/groups': {
+      id: '/groups'
+      path: '/groups'
+      fullPath: '/groups'
+      preLoaderRoute: typeof GroupsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/home': {
@@ -279,6 +299,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
+  GroupsRoute: GroupsRoute,
   HomeRoute: HomeRoute,
   NewRoute: NewRoute,
   TestRoute: TestRoute,

@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { takeDraft } from "@/lib/plan-draft";
 import { createProject } from "@/lib/projects.functions";
+import { saveGroupFromProject } from "@/lib/groups.functions";
 
 import { effectiveDurationMinutes, generateCandidateSlots, MAX_SLOTS } from "@/lib/slots";
 import {
@@ -53,7 +54,6 @@ export const Route = createFileRoute("/new")({
   component: NewProject,
 });
 
-
 type Person = {
   key: string;
   display_name: string;
@@ -70,10 +70,8 @@ function NewProject() {
   const navigate = useNavigate();
   const { session, loading } = useAuth();
   const create = useServerFn(createProject);
-  const tz = useMemo(
-    () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-    [],
-  );
+  const saveGroup = useServerFn(saveGroupFromProject);
+  const tz = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", []);
 
   const [step, setStep] = useState(0);
   const [templateId, setTemplateId] = useState<TemplateId | null>(null);
@@ -93,6 +91,8 @@ function NewProject() {
   const [groupId, setGroupId] = useState<string | null>(null);
   const [people, setPeople] = useState<Person[]>([]);
   const [newName, setNewName] = useState("");
+  const [saveAsGroup, setSaveAsGroup] = useState(false);
+  const [saveGroupName, setSaveGroupName] = useState("");
   const [quorum, setQuorum] = useState(2);
   const [quorumTouched, setQuorumTouched] = useState(false);
   const [hasDeadline, setHasDeadline] = useState(true);
@@ -135,7 +135,6 @@ function NewProject() {
     setStep(parsedPeople.length === 0 ? 3 : draft.name ? 4 : 1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search.draft, session]);
-
 
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/auth" });
@@ -261,6 +260,14 @@ function NewProject() {
           slots: generation.slots,
         },
       });
+      if (saveAsGroup && !groupId && saveGroupName.trim() && session) {
+        try {
+          await saveGroup({ data: { slug: result.slug, name: saveGroupName.trim() } });
+          toast.success(`Saved “${saveGroupName.trim()}” — reuse these people next time.`);
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : "Couldn't save that group");
+        }
+      }
       if (generation.widened) {
         toast.info("That window was huge, so start times are spaced further apart.");
       }
@@ -296,10 +303,7 @@ function NewProject() {
         {STEPS.map((s, i) => (
           <span
             key={s}
-            className={cn(
-              "h-1 flex-1 rounded-full",
-              i <= step ? "bg-primary" : "bg-secondary",
-            )}
+            className={cn("h-1 flex-1 rounded-full", i <= step ? "bg-primary" : "bg-secondary")}
           />
         ))}
       </div>
@@ -316,8 +320,6 @@ function NewProject() {
           )}
         </div>
       )}
-
-
 
       <div className="mt-8 flex-1">
         {step === 0 && (
@@ -354,7 +356,9 @@ function NewProject() {
               <div className="mt-6 space-y-5 rounded-2xl border-2 border-border bg-card p-4">
                 <div>
                   <p className="text-sm font-bold">Which days work?</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{describeDays(constraints.days)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {describeDays(constraints.days)}
+                  </p>
                   <div className="mt-3 flex gap-1.5">
                     {DAY_LABELS.map((label, i) => (
                       <button
@@ -394,9 +398,7 @@ function NewProject() {
                         max={480}
                         step={30}
                         value={[constraints.durationMinutes ?? 0]}
-                        onValueChange={([v]) =>
-                          patch({ durationMinutes: !v ? null : v })
-                        }
+                        onValueChange={([v]) => patch({ durationMinutes: !v ? null : v })}
                       />
                       <p className="text-xs text-muted-foreground">
                         Slide all the way left for “any length”.
@@ -416,9 +418,7 @@ function NewProject() {
                         step={0.5}
                         minStepsBetweenThumbs={1}
                         value={[constraints.startAfter, constraints.endBy]}
-                        onValueChange={([a, b]) =>
-                          patch({ startAfter: a ?? 0, endBy: b ?? 24 })
-                        }
+                        onValueChange={([a, b]) => patch({ startAfter: a ?? 0, endBy: b ?? 24 })}
                       />
                       <p className="text-xs text-muted-foreground">
                         Starts after {formatHour(constraints.startAfter)} · ends by{" "}
@@ -429,7 +429,6 @@ function NewProject() {
                 )}
               </div>
             )}
-
           </section>
         )}
 
@@ -638,6 +637,38 @@ function NewProject() {
                 </li>
               ))}
             </ul>
+
+            {!groupId && people.length > 1 && (
+              <div className="mt-5 rounded-2xl border border-border p-4">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold">Save these people as a group</p>
+                    <p className="text-xs text-muted-foreground">
+                      {session
+                        ? "Reuse this crew for future plans and hand out co-organizer access."
+                        : "Sign in first to keep this crew for next time."}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={saveAsGroup}
+                    disabled={!session}
+                    onCheckedChange={(c) => {
+                      setSaveAsGroup(c);
+                      if (c && !saveGroupName)
+                        setSaveGroupName(name.trim() ? `${name.trim()} crew` : "");
+                    }}
+                  />
+                </div>
+                {saveAsGroup && (
+                  <Input
+                    className="mt-3 h-12"
+                    placeholder="Group name"
+                    value={saveGroupName}
+                    onChange={(e) => setSaveGroupName(e.target.value)}
+                  />
+                )}
+              </div>
+            )}
           </section>
         )}
 
