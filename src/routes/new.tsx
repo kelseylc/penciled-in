@@ -16,8 +16,17 @@ import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { createProject } from "@/lib/projects.functions";
-import { generateCandidateSlots, MAX_SLOTS, type Granularity } from "@/lib/slots";
-import { getTemplate, TEMPLATES, type TemplateId } from "@/lib/templates";
+import { effectiveDurationMinutes, generateCandidateSlots, MAX_SLOTS } from "@/lib/slots";
+import {
+  DAY_LABELS,
+  describeDays,
+  formatDuration,
+  formatHour,
+  getTemplate,
+  TEMPLATES,
+  type EventConstraints,
+  type TemplateId,
+} from "@/lib/templates";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/new")({
@@ -62,7 +71,12 @@ function NewProject() {
 
   const [step, setStep] = useState(0);
   const [templateId, setTemplateId] = useState<TemplateId | null>(null);
-  const [duration, setDuration] = useState(120);
+  const [constraints, setConstraints] = useState<EventConstraints>({
+    days: [0, 1, 2, 3, 4, 5, 6],
+    startAfter: 9,
+    endBy: 24,
+    durationMinutes: 120,
+  });
   const [name, setName] = useState("");
   const [mode, setMode] = useState<"one_off" | "recurring">("one_off");
   const [cadence, setCadence] = useState<"weekly" | "biweekly" | "monthly" | "quarterly">("weekly");
@@ -77,7 +91,6 @@ function NewProject() {
   const [quorumTouched, setQuorumTouched] = useState(false);
   const [hasDeadline, setHasDeadline] = useState(true);
   const [deadline, setDeadline] = useState<Date>(addDays(new Date(), 5));
-  const [granularity, setGranularity] = useState<Granularity>("daypart");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -110,15 +123,31 @@ function NewProject() {
   const generation = useMemo(() => {
     if (!template) return null;
     return generateCandidateSlots({
-      template,
-      durationMinutes: duration,
+      constraints,
       windowStart: format(windowStart, "yyyy-MM-dd"),
       windowEnd: format(windowEnd, "yyyy-MM-dd"),
       timezone: tz,
-      granularity,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [template, duration, granularity, tz, format(windowStart, "yyyy-MM-dd"), format(windowEnd, "yyyy-MM-dd")]);
+  }, [
+    template,
+    constraints,
+    tz,
+    format(windowStart, "yyyy-MM-dd"),
+    format(windowEnd, "yyyy-MM-dd"),
+  ]);
+
+  function patch(next: Partial<EventConstraints>) {
+    setConstraints((c) => ({ ...c, ...next }));
+  }
+
+  function toggleDay(d: number) {
+    setConstraints((c) => {
+      const has = c.days.includes(d);
+      const days = has ? c.days.filter((x) => x !== d) : [...c.days, d].sort((a, b) => a - b);
+      return { ...c, days: days.length ? days : c.days };
+    });
+  }
 
   async function pickGroup(id: string) {
     setGroupId(id);
@@ -154,7 +183,7 @@ function NewProject() {
   }
 
   const canAdvance = [
-    !!templateId,
+    !!templateId && constraints.days.length > 0,
     name.trim().length > 0,
     windowMode === "rolling" || (!!range?.from && !!range?.to),
     people.length > 0,
@@ -170,7 +199,7 @@ function NewProject() {
         data: {
           name: name.trim(),
           template: template.id,
-          duration_minutes: duration,
+          duration_minutes: effectiveDurationMinutes(constraints),
           mode,
           cadence: mode === "recurring" ? cadence : null,
           window_mode: windowMode,
@@ -189,7 +218,7 @@ function NewProject() {
         },
       });
       if (generation.widened) {
-        toast.info("That window was huge, so we grouped times into morning/afternoon/evening.");
+        toast.info("That window was huge, so start times are spaced further apart.");
       }
       navigate({ to: "/share/$slug", params: { slug: result.slug } });
     } catch (err) {
@@ -242,7 +271,7 @@ function NewProject() {
                   type="button"
                   onClick={() => {
                     setTemplateId(t.id);
-                    setDuration(t.defaultDuration);
+                    setConstraints({ ...t.defaults, days: [...t.defaults.days] });
                   }}
                   className={cn(
                     "grid w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-4 rounded-2xl border-2 p-4 text-left",
@@ -262,21 +291,86 @@ function NewProject() {
               ))}
             </div>
 
-            {template?.durationRange && (
-              <div className="mt-6 rounded-2xl border border-border p-4">
-                <Label className="text-sm font-bold">
-                  How long? {Math.floor(duration / 60)}h{duration % 60 ? ` ${duration % 60}m` : ""}
-                </Label>
-                <Slider
-                  className="mt-4"
-                  min={template.durationRange.min}
-                  max={template.durationRange.max}
-                  step={template.durationRange.step}
-                  value={[duration]}
-                  onValueChange={([v]) => setDuration(v ?? duration)}
-                />
+            {template && (
+              <div className="mt-6 space-y-5 rounded-2xl border-2 border-border bg-card p-4">
+                <div>
+                  <p className="text-sm font-bold">Which days work?</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{describeDays(constraints.days)}</p>
+                  <div className="mt-3 flex gap-1.5">
+                    {DAY_LABELS.map((label, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        aria-pressed={constraints.days.includes(i)}
+                        onClick={() => toggleDay(i)}
+                        className={cn(
+                          "h-11 flex-1 rounded-xl border-2 text-sm font-bold",
+                          constraints.days.includes(i)
+                            ? "border-primary bg-primary/15 text-foreground"
+                            : "border-border text-muted-foreground",
+                        )}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {constraints.fullDay ? (
+                  <p className="text-xs text-muted-foreground">
+                    Full days — everyone needs all selected days free. Add Friday or Monday for a
+                    long weekend.
+                  </p>
+                ) : (
+                  <>
+                    <div>
+                      <div className="flex items-baseline justify-between">
+                        <p className="text-sm font-bold">How long?</p>
+                        <p className="text-sm font-medium text-muted-foreground">
+                          {formatDuration(constraints.durationMinutes)}
+                        </p>
+                      </div>
+                      <Slider
+                        min={0}
+                        max={480}
+                        step={30}
+                        value={[constraints.durationMinutes ?? 0]}
+                        onValueChange={([v]) =>
+                          patch({ durationMinutes: !v ? null : v })
+                        }
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Slide all the way left for “any length”.
+                      </p>
+                    </div>
+
+                    <div>
+                      <div className="flex items-baseline justify-between">
+                        <p className="text-sm font-bold">Time of day</p>
+                        <p className="text-sm font-medium text-muted-foreground">
+                          {formatHour(constraints.startAfter)} – {formatHour(constraints.endBy)}
+                        </p>
+                      </div>
+                      <Slider
+                        min={0}
+                        max={24}
+                        step={0.5}
+                        minStepsBetweenThumbs={1}
+                        value={[constraints.startAfter, constraints.endBy]}
+                        onValueChange={([a, b]) =>
+                          patch({ startAfter: a ?? 0, endBy: b ?? 24 })
+                        }
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Starts after {formatHour(constraints.startAfter)} · ends by{" "}
+                        {formatHour(constraints.endBy)}
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             )}
+
           </section>
         )}
 
@@ -402,24 +496,11 @@ function NewProject() {
               </div>
             )}
 
-            <div className="mt-6 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-2xl border border-border p-4">
-              <div className="min-w-0">
-                <p className="text-sm font-bold">Hourly options</p>
-                <p className="text-xs text-muted-foreground">
-                  Off = morning / afternoon / evening blocks.
-                </p>
-              </div>
-              <Switch
-                checked={granularity === "hourly"}
-                onCheckedChange={(c) => setGranularity(c ? "hourly" : "daypart")}
-              />
-            </div>
-
             {generation && (
               <p className="mt-3 text-xs text-muted-foreground">
                 {generation.slots.length} time options
                 {generation.widened
-                  ? " — widened to day-part blocks to stay under the cap."
+                  ? ` — spaced ${generation.stepHours}h apart to stay under the cap.`
                   : generation.truncated
                     ? ` — capped at ${MAX_SLOTS}.`
                     : ""}
