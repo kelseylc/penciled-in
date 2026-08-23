@@ -1,7 +1,7 @@
 import { AppBar } from "@/components/AppBar";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -14,6 +14,11 @@ import { claimParticipants } from "@/lib/claim.functions";
 import { signUpWithEmail } from "@/lib/auth-signup";
 import { storedGuestTokens } from "@/lib/guest-token";
 import { readAuthErrorFromUrl, safeRedirect, type AuthLinkError } from "@/lib/auth-links";
+
+/** The screens you can navigate to. Absent mode is the sign-in form. */
+type ScreenParam = "signup" | "forgot";
+type Screen = "login" | ScreenParam;
+type Search = { mode?: ScreenParam; redirect?: string };
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -33,11 +38,10 @@ export const Route = createFileRoute("/auth")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  // ?mode=signup|forgot deep-links a specific screen (used by /test auditing).
+  // ?mode=signup|forgot is the screen; absent means sign in. Switching screens
+  // navigates, so Back works and password managers see a new page.
   // ?redirect=/path is where sign-in returns you to; anything off-site is dropped.
-  validateSearch: (
-    search: Record<string, unknown>,
-  ): { mode?: "signup" | "forgot"; redirect?: string } => {
+  validateSearch: (search: Record<string, unknown>): Search => {
     const m = search["mode"];
     const dest = safeRedirect(search["redirect"]);
     return {
@@ -59,26 +63,51 @@ const displayNameSchema = z.string().trim().min(1, "Add a name your group will r
  */
 let pendingLinkError = readAuthErrorFromUrl();
 
-type Mode = "login" | "signup" | "forgot" | "forgot-sent" | "verify-email";
+/**
+ * "We sent it" is the consequence of an action, not a destination — it holds
+ * the address we sent to, which a deep link could never supply.
+ */
+type Sent = { kind: "confirm" | "reset"; email: string };
+
+type FieldErrors = { displayName?: string; email?: string; password?: string; form?: string };
+
+function issueOf(error: z.ZodError, fallback: string): string {
+  return error.issues[0]?.message ?? fallback;
+}
+
+/** Errors live beside the field they belong to, not in a toast that times out. */
+function FieldError({ id, message }: { id: string; message: string | undefined }) {
+  if (!message) return null;
+  return (
+    <p id={id} role="alert" className="text-sm font-medium text-destructive">
+      {message}
+    </p>
+  );
+}
 
 function AuthPage() {
   const navigate = useNavigate();
   const { session, loading } = useAuth();
   const claim = useServerFn(claimParticipants);
 
-  const { mode: modeParam, redirect } = Route.useSearch() as {
-    mode?: Mode;
-    redirect?: string;
-  };
-  const [mode, setMode] = useState<Mode>(modeParam ?? "login");
+  const { mode: modeParam, redirect } = Route.useSearch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [busy, setBusy] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const [sent, setSent] = useState<Sent | null>(null);
+  const [errors, setErrors] = useState<FieldErrors>({});
   const [unconfirmedHint, setUnconfirmedHint] = useState(false);
   const [existingAccount, setExistingAccount] = useState(false);
   const [linkError, setLinkError] = useState<AuthLinkError | null>(null);
+
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+
+  const screen: Screen = modeParam ?? "login";
 
   // Claim guest history and route onward once signed in.
   useEffect(() => {
@@ -100,86 +129,152 @@ function AuthPage() {
     pendingLinkError = null;
   }, []);
 
+  // A Back that changes the screen should drop the "we sent it" state with it.
+  useEffect(() => {
+    setSent(null);
+    setErrors({});
+  }, [modeParam]);
+
+  // Moving between screens is a new screen, so say so — the heading changes but
+  // focus would otherwise sit where it was.
+  const settled = useRef(false);
+  useEffect(() => {
+    if (!settled.current) {
+      settled.current = true;
+      return;
+    }
+    headingRef.current?.focus();
+  }, [screen, sent]);
+
   useEffect(() => {
     if (cooldown <= 0) return;
     const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [cooldown]);
 
-  /** Any edit to the credentials invalidates the hints about the last attempt. */
-  function clearHints() {
+  /** Switching screens is a navigation, so Back returns to the previous one. */
+  function goTo(next: Screen) {
+    setPassword("");
+    setSent(null);
+    setErrors({});
+    setUnconfirmedHint(false);
+    setExistingAccount(false);
+    setLinkError(null);
+    navigate({
+      to: "/auth",
+      search: (prev: Search) => ({
+        ...(prev.redirect ? { redirect: prev.redirect } : {}),
+        ...(next === "login" ? {} : { mode: next }),
+      }),
+    });
+  }
+
+  /** Editing a field retires the complaint about it and the last attempt. */
+  function edit(key: "displayName" | "email" | "password", value: string) {
+    if (key === "displayName") setDisplayName(value);
+    if (key === "email") setEmail(value);
+    if (key === "password") setPassword(value);
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      delete next.form;
+      return next;
+    });
     setUnconfirmedHint(false);
     setExistingAccount(false);
     setLinkError(null);
   }
 
-  function parseEmail(): string | null {
+  function focusFirst(found: FieldErrors) {
+    if (found.displayName) nameRef.current?.focus();
+    else if (found.email) emailRef.current?.focus();
+    else if (found.password) passwordRef.current?.focus();
+  }
+
+  /** Every problem at once, rather than one per submit. */
+  function checkEmail(): string | null {
     const parsed = emailSchema.safeParse(email);
-    if (!parsed.success) {
-      toast.error(parsed.error.issues[0]?.message ?? "Check your email");
-      return null;
-    }
-    return parsed.data;
+    if (parsed.success) return parsed.data;
+    const found = { email: issueOf(parsed.error, "Check your email") };
+    setErrors(found);
+    focusFirst(found);
+    return null;
   }
 
   async function submitLogin(e: React.FormEvent) {
     e.preventDefault();
-    const address = parseEmail();
-    if (!address) return;
+    const parsed = emailSchema.safeParse(email);
+    if (!parsed.success || !password) {
+      const found: FieldErrors = {
+        ...(parsed.success ? {} : { email: issueOf(parsed.error, "Check your email") }),
+        ...(password ? {} : { password: "Enter your password" }),
+      };
+      setErrors(found);
+      focusFirst(found);
+      return;
+    }
+
     setBusy(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email: address, password });
+      const { error } = await supabase.auth.signInWithPassword({
+        email: parsed.data,
+        password,
+      });
       if (error) throw error;
-      // The session listener redirects to /home.
+      // Deliberately still busy: the session listener claims guest answers and
+      // navigates, and freeing the button first invites a second submit into
+      // the gap.
     } catch (err) {
       // Supabase masks "email not confirmed" as invalid credentials so accounts
       // can't be enumerated. Offer the confirmation path instead of dead-ending.
       const message = err instanceof Error ? err.message : "";
       if (/invalid login credentials/i.test(message)) {
         setUnconfirmedHint(true);
-        toast.error("That email and password didn't match — or the email is still unconfirmed.");
+        setErrors({
+          form: "That email and password didn't match — or the email is still unconfirmed.",
+        });
       } else {
-        toast.error(message || "Couldn't sign you in");
+        setErrors({ form: message || "Couldn't sign you in" });
       }
-    } finally {
       setBusy(false);
     }
   }
 
   async function submitSignup(e: React.FormEvent) {
     e.preventDefault();
-    const address = parseEmail();
-    if (!address) return;
     const name = displayNameSchema.safeParse(displayName);
-    if (!name.success) {
-      toast.error(name.error.issues[0]!.message);
-      return;
-    }
+    const parsed = emailSchema.safeParse(email);
     const pw = passwordSchema.safeParse(password);
-    if (!pw.success) {
-      toast.error(pw.error.issues[0]!.message);
+    if (!name.success || !parsed.success || !pw.success) {
+      const found: FieldErrors = {
+        ...(name.success ? {} : { displayName: issueOf(name.error, "Add a name") }),
+        ...(parsed.success ? {} : { email: issueOf(parsed.error, "Check your email") }),
+        ...(pw.success ? {} : { password: issueOf(pw.error, "Check your password") }),
+      };
+      setErrors(found);
+      focusFirst(found);
       return;
     }
 
     setBusy(true);
     try {
       const outcome = await signUpWithEmail({
-        email: address,
+        email: parsed.data,
         password: pw.data,
         displayName: name.data,
       });
-      if (outcome.status === "signed-in") return; // The listener takes it from here.
+      // Signed in already: the listener navigates, so stay busy through it.
+      if (outcome.status === "signed-in") return;
       if (outcome.status === "already-registered") {
-        setPassword("");
         setExistingAccount(true);
-        setMode("login");
+        setBusy(false);
         return;
       }
       setCooldown(30);
-      setMode("verify-email");
+      setSent({ kind: "confirm", email: parsed.data });
+      setBusy(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't create your account");
-    } finally {
+      setErrors({ form: err instanceof Error ? err.message : "Couldn't create your account" });
       setBusy(false);
     }
   }
@@ -187,7 +282,7 @@ function AuthPage() {
   /** Sends the recovery link from the forgot-password form, then confirms it went. */
   async function submitPasswordReset(e: React.FormEvent) {
     e.preventDefault();
-    const address = parseEmail();
+    const address = checkEmail();
     if (!address) return;
     setBusy(true);
     try {
@@ -196,19 +291,17 @@ function AuthPage() {
       });
       if (error) throw error;
       setCooldown(30);
-      setMode("forgot-sent");
+      setSent({ kind: "reset", email: address });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't send the email");
+      setErrors({ form: err instanceof Error ? err.message : "Couldn't send the email" });
     } finally {
       setBusy(false);
     }
   }
 
   /** Re-sends the signup confirmation link. */
-  async function resendConfirmation() {
+  async function resendConfirmation(address: string) {
     if (cooldown > 0) return;
-    const address = parseEmail();
-    if (!address) return;
     try {
       const { error } = await supabase.auth.resend({
         type: "signup",
@@ -223,10 +316,8 @@ function AuthPage() {
     }
   }
 
-  async function resendReset() {
+  async function resendReset(address: string) {
     if (cooldown > 0) return;
-    const address = parseEmail();
-    if (!address) return;
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(address, {
         redirectTo: `${window.location.origin}/reset-password`,
@@ -239,38 +330,36 @@ function AuthPage() {
     }
   }
 
-  function backToLogin() {
-    setMode("login");
-    setPassword("");
-    clearHints();
-  }
-
-  const heading =
-    mode === "forgot"
+  const heading = sent
+    ? sent.kind === "reset"
+      ? "Check your email"
+      : "Confirm your email"
+    : screen === "forgot"
       ? "Reset your password"
-      : mode === "forgot-sent"
-        ? "Check your email"
-        : mode === "verify-email"
-          ? "Confirm your email"
-          : mode === "signup"
-            ? "Create your organizer account"
-            : "Welcome back";
+      : screen === "signup"
+        ? "Create your organizer account"
+        : "Welcome back";
 
-  const sub =
-    mode === "forgot"
+  const sub = sent
+    ? sent.kind === "reset"
+      ? `We sent a password reset link to ${sent.email}. Tap it to choose a new password.`
+      : `We sent a confirmation email to ${sent.email}. Tap the button in it to activate your account.`
+    : screen === "forgot"
       ? "Enter the email you signed up with and we'll send you a link to pick a new password."
-      : mode === "forgot-sent"
-        ? `We sent a password reset link to ${email.trim()}. Tap it to choose a new password.`
-        : mode === "verify-email"
-          ? `We sent a confirmation email to ${email.trim()}. Tap the button in it to activate your account.`
-          : mode === "signup"
-            ? "Organizers need an account. Responding to a plan never does."
-            : "Sign in to see your plans. Responding to a plan never needs an account.";
+      : screen === "signup"
+        ? "Organizers need an account. Responding to a plan never does."
+        : "Sign in to see your plans. Responding to a plan never needs an account.";
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-5 pb-10 pt-2 text-base">
       <AppBar />
-      <h1 className="text-3xl font-black tracking-tight">{heading}</h1>
+      <h1
+        ref={headingRef}
+        tabIndex={-1}
+        className="text-3xl font-black tracking-tight outline-none"
+      >
+        {heading}
+      </h1>
       <p className="mt-2 text-sm text-muted-foreground">{sub}</p>
 
       {linkError && (
@@ -283,57 +372,95 @@ function AuthPage() {
         </div>
       )}
 
-      {existingAccount && mode === "login" && (
+      {existingAccount && screen === "signup" && !sent && (
         <div role="alert" className="mt-6 rounded-2xl bg-card p-4 text-sm text-muted-foreground">
-          <p>
-            That email already has an account. Sign in below — or reset the password if you don't
-            remember it.
-          </p>
-          <button
-            type="button"
-            onClick={() => setMode("forgot")}
-            className="mt-2 min-h-11 text-sm font-bold text-primary"
-          >
-            Reset my password
-          </button>
+          <p>{email.trim()} already has an account — no new one was created.</p>
+          <div className="mt-1 flex flex-col">
+            <button
+              type="button"
+              onClick={() => goTo("login")}
+              className="min-h-11 text-left text-sm font-bold text-primary"
+            >
+              Sign in instead
+            </button>
+            <button
+              type="button"
+              onClick={() => goTo("forgot")}
+              className="min-h-11 text-left text-sm font-bold text-primary"
+            >
+              Reset my password
+            </button>
+          </div>
         </div>
       )}
 
-      {mode === "login" && (
-        <form onSubmit={submitLogin} className="mt-8 space-y-4">
+      {sent && (
+        <div className="mt-8 space-y-5">
+          <p className="rounded-2xl bg-card p-4 text-sm text-muted-foreground">
+            {sent.kind === "reset"
+              ? "Tap the link in the email to pick a new password, then come back here."
+              : "One tap and you're done. If it's not there in a minute, check spam."}
+          </p>
+          <button
+            type="button"
+            onClick={() =>
+              sent.kind === "reset" ? resendReset(sent.email) : resendConfirmation(sent.email)
+            }
+            disabled={cooldown > 0}
+            className="min-h-11 w-full text-sm font-bold text-primary disabled:text-muted-foreground"
+          >
+            {cooldown > 0 ? `Resend email in ${cooldown}s` : "Resend email"}
+          </button>
+          <Button
+            variant="secondary"
+            className="h-14 w-full rounded-2xl text-base"
+            onClick={() => goTo("login")}
+          >
+            Back to sign in
+          </Button>
+        </div>
+      )}
+
+      {!sent && screen === "login" && (
+        <form onSubmit={submitLogin} noValidate className="mt-8 space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
+              ref={emailRef}
               type="email"
               required
               autoComplete="email"
               inputMode="email"
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? "email-error" : undefined}
               className="h-14 rounded-xl text-base"
               value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                clearHints();
-              }}
+              onChange={(e) => edit("email", e.target.value)}
               placeholder="you@example.com"
             />
+            <FieldError id="email-error" message={errors.email} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
             <Input
               id="password"
+              ref={passwordRef}
               type="password"
               required
               autoComplete="current-password"
+              aria-invalid={!!errors.password}
+              aria-describedby={errors.password ? "password-error" : undefined}
               className="h-14 rounded-xl text-base"
               value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                clearHints();
-              }}
+              onChange={(e) => edit("password", e.target.value)}
               placeholder="At least 8 characters"
             />
+            <FieldError id="password-error" message={errors.password} />
           </div>
+
+          <FieldError id="login-error" message={errors.form} />
+
           <Button type="submit" disabled={busy} className="h-14 w-full rounded-2xl text-base">
             {busy ? "Signing in…" : "Sign in"}
           </Button>
@@ -346,7 +473,10 @@ function AuthPage() {
               </p>
               <button
                 type="button"
-                onClick={resendConfirmation}
+                onClick={() => {
+                  const address = checkEmail();
+                  if (address) void resendConfirmation(address);
+                }}
                 disabled={cooldown > 0}
                 className="mt-2 min-h-11 text-sm font-bold text-primary disabled:text-muted-foreground"
               >
@@ -358,17 +488,14 @@ function AuthPage() {
           <div className="flex flex-col gap-1 pt-2">
             <button
               type="button"
-              onClick={() => setMode("forgot")}
+              onClick={() => goTo("forgot")}
               className="min-h-11 text-sm text-muted-foreground underline underline-offset-4"
             >
               Forgot your password?
             </button>
             <button
               type="button"
-              onClick={() => {
-                setMode("signup");
-                setPassword("");
-              }}
+              onClick={() => goTo("signup")}
               className="min-h-11 text-sm text-muted-foreground underline underline-offset-4"
             >
               New here? Create an account
@@ -377,21 +504,25 @@ function AuthPage() {
         </form>
       )}
 
-      {mode === "signup" && (
-        <form onSubmit={submitSignup} className="mt-8 space-y-4">
+      {!sent && screen === "signup" && (
+        <form onSubmit={submitSignup} noValidate className="mt-8 space-y-4">
           <div className="space-y-2">
             <Label htmlFor="display-name">Your name</Label>
             <Input
               id="display-name"
+              ref={nameRef}
               type="text"
               required
               autoComplete="name"
               maxLength={80}
+              aria-invalid={!!errors.displayName}
+              aria-describedby={errors.displayName ? "display-name-error" : undefined}
               className="h-14 rounded-xl text-base"
               value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
+              onChange={(e) => edit("displayName", e.target.value)}
               placeholder="What your group calls you"
             />
+            <FieldError id="display-name-error" message={errors.displayName} />
             <p className="text-xs text-muted-foreground">
               This is what your group sees. You can change it any time — it's never your login.
             </p>
@@ -400,36 +531,46 @@ function AuthPage() {
             <Label htmlFor="signup-email">Email</Label>
             <Input
               id="signup-email"
+              ref={emailRef}
               type="email"
               required
               autoComplete="email"
               inputMode="email"
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? "signup-email-error" : undefined}
               className="h-14 rounded-xl text-base"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => edit("email", e.target.value)}
               placeholder="you@example.com"
             />
+            <FieldError id="signup-email-error" message={errors.email} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="signup-password">Password</Label>
             <Input
               id="signup-password"
+              ref={passwordRef}
               type="password"
               required
-              minLength={8}
               autoComplete="new-password"
+              aria-invalid={!!errors.password}
+              aria-describedby={errors.password ? "signup-password-error" : undefined}
               className="h-14 rounded-xl text-base"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => edit("password", e.target.value)}
               placeholder="At least 8 characters"
             />
+            <FieldError id="signup-password-error" message={errors.password} />
           </div>
+
+          <FieldError id="signup-error" message={errors.form} />
+
           <Button type="submit" disabled={busy} className="h-14 w-full rounded-2xl text-base">
             {busy ? "Creating…" : "Create account"}
           </Button>
           <button
             type="button"
-            onClick={backToLogin}
+            onClick={() => goTo("login")}
             className="min-h-11 w-full text-sm text-muted-foreground underline underline-offset-4"
           >
             Already have an account? Sign in
@@ -437,79 +578,40 @@ function AuthPage() {
         </form>
       )}
 
-      {mode === "verify-email" && (
-        <div className="mt-8 space-y-5">
-          <p className="rounded-2xl bg-card p-4 text-sm text-muted-foreground">
-            One tap and you're done. If it's not there in a minute, check spam.
-          </p>
-          <button
-            type="button"
-            onClick={resendConfirmation}
-            disabled={cooldown > 0}
-            className="min-h-11 w-full text-sm font-bold text-primary disabled:text-muted-foreground"
-          >
-            {cooldown > 0 ? `Resend email in ${cooldown}s` : "Resend confirmation email"}
-          </button>
-          <Button
-            variant="secondary"
-            className="h-14 w-full rounded-2xl text-base"
-            onClick={backToLogin}
-          >
-            Back to sign in
-          </Button>
-        </div>
-      )}
-
-      {mode === "forgot" && (
-        <form onSubmit={submitPasswordReset} className="mt-8 space-y-4">
+      {!sent && screen === "forgot" && (
+        <form onSubmit={submitPasswordReset} noValidate className="mt-8 space-y-4">
           <div className="space-y-2">
             <Label htmlFor="forgot-email">Email</Label>
             <Input
               id="forgot-email"
+              ref={emailRef}
               type="email"
               required
               autoComplete="email"
               inputMode="email"
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? "forgot-email-error" : undefined}
               className="h-14 rounded-xl text-base"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => edit("email", e.target.value)}
               placeholder="you@example.com"
             />
+            <FieldError id="forgot-email-error" message={errors.email} />
           </div>
+
+          <FieldError id="forgot-error" message={errors.form} />
+
           <Button type="submit" disabled={busy} className="h-14 w-full rounded-2xl text-base">
             {busy ? "Sending…" : "Send reset link"}
           </Button>
           <button
             type="button"
-            onClick={backToLogin}
+            onClick={() => goTo("login")}
             className="min-h-11 w-full text-sm text-muted-foreground underline underline-offset-4"
           >
             Back to sign in
           </button>
         </form>
-      )}
-
-      {mode === "forgot-sent" && (
-        <div className="mt-8 space-y-5">
-          <p className="rounded-2xl bg-card p-4 text-sm text-muted-foreground">
-            Tap the link in the email to pick a new password, then come back here.
-          </p>
-          <button
-            type="button"
-            onClick={resendReset}
-            disabled={cooldown > 0}
-            className="min-h-11 w-full text-sm font-bold text-primary disabled:text-muted-foreground"
-          >
-            {cooldown > 0 ? `Resend email in ${cooldown}s` : "Resend reset email"}
-          </button>
-          <Button
-            variant="secondary"
-            className="h-14 w-full rounded-2xl text-base"
-            onClick={backToLogin}
-          >
-            Back to sign in
-          </Button>
-        </div>
       )}
     </main>
   );

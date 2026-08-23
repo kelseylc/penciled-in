@@ -50,6 +50,17 @@ const LINK_GRACE_MS = 4000;
  */
 type Gate = "checking" | "verify" | "ready" | "invalid";
 
+type FieldErrors = { current?: string; password?: string; confirm?: string; form?: string };
+
+function FieldError({ id, message }: { id: string; message: string | undefined }) {
+  if (!message) return null;
+  return (
+    <p id={id} role="alert" className="text-sm font-medium text-destructive">
+      {message}
+    </p>
+  );
+}
+
 function ResetPasswordPage() {
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
@@ -59,7 +70,24 @@ function ResetPasswordPage() {
   const [gate, setGate] = useState<Gate>("checking");
   const [email, setEmail] = useState<string | null>(null);
   const [linkError, setLinkError] = useState<AuthLinkError | null>(null);
+  const [errors, setErrors] = useState<FieldErrors>({});
   const decided = useRef(false);
+  const currentRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const confirmRef = useRef<HTMLInputElement>(null);
+
+  /** Editing a field retires the complaint about it. */
+  function edit(key: "current" | "password" | "confirm", value: string) {
+    if (key === "current") setCurrentPassword(value);
+    if (key === "password") setPassword(value);
+    if (key === "confirm") setConfirm(value);
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      delete next.form;
+      return next;
+    });
+  }
 
   // Work out what this visit is allowed to do. We never auto-navigate away:
   // this screen exists to collect the new password.
@@ -121,6 +149,11 @@ function ResetPasswordPage() {
   async function confirmIdentity(e: React.FormEvent) {
     e.preventDefault();
     if (!email) return;
+    if (!currentPassword) {
+      setErrors({ current: "Enter your current password" });
+      currentRef.current?.focus();
+      return;
+    }
     setBusy(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -129,9 +162,11 @@ function ResetPasswordPage() {
       });
       if (error) throw error;
       setCurrentPassword("");
+      setErrors({});
       setGate("ready");
     } catch {
-      toast.error("That password didn't match");
+      setErrors({ current: "That password didn't match" });
+      currentRef.current?.focus();
     } finally {
       setBusy(false);
     }
@@ -140,12 +175,14 @@ function ResetPasswordPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const pw = passwordSchema.safeParse(password);
-    if (!pw.success) {
-      toast.error(pw.error.issues[0]!.message);
-      return;
-    }
-    if (password !== confirm) {
-      toast.error("Those passwords don't match");
+    const mismatch = password !== confirm;
+    if (!pw.success || mismatch) {
+      setErrors({
+        ...(pw.success ? {} : { password: pw.error.issues[0]?.message ?? "Check your password" }),
+        ...(mismatch ? { confirm: "Those passwords don't match" } : {}),
+      });
+      if (!pw.success) passwordRef.current?.focus();
+      else confirmRef.current?.focus();
       return;
     }
     setBusy(true);
@@ -153,10 +190,11 @@ function ResetPasswordPage() {
       const { error } = await supabase.auth.updateUser({ password: pw.data });
       if (error) throw error;
       toast.success("Password updated");
+      // Deliberately still busy: navigation is next, and freeing the button
+      // first invites a second submit into the gap.
       navigate({ to: "/home" });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't update your password");
-    } finally {
+      setErrors({ form: err instanceof Error ? err.message : "Couldn't update your password" });
       setBusy(false);
     }
   }
@@ -185,19 +223,23 @@ function ResetPasswordPage() {
       )}
 
       {gate === "verify" && (
-        <form onSubmit={confirmIdentity} className="mt-8 space-y-4">
+        <form onSubmit={confirmIdentity} noValidate className="mt-8 space-y-4">
           <div className="space-y-2">
             <Label htmlFor="current-password">Current password</Label>
             <Input
               id="current-password"
+              ref={currentRef}
               type="password"
               required
               autoComplete="current-password"
+              aria-invalid={!!errors.current}
+              aria-describedby={errors.current ? "current-password-error" : undefined}
               className="h-14 rounded-xl text-base"
               value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
+              onChange={(e) => edit("current", e.target.value)}
               placeholder="The one you use today"
             />
+            <FieldError id="current-password-error" message={errors.current} />
           </div>
           <Button type="submit" disabled={busy} className="h-14 w-full rounded-2xl text-base">
             {busy ? "Checking…" : "Continue"}
@@ -213,33 +255,44 @@ function ResetPasswordPage() {
       )}
 
       {(gate === "checking" || gate === "ready") && (
-        <form onSubmit={submit} className="mt-8 space-y-4">
+        <form onSubmit={submit} noValidate className="mt-8 space-y-4">
           <div className="space-y-2">
             <Label htmlFor="new-password">New password</Label>
             <Input
               id="new-password"
+              ref={passwordRef}
               type="password"
               required
               autoComplete="new-password"
+              aria-invalid={!!errors.password}
+              aria-describedby={errors.password ? "new-password-error" : undefined}
               className="h-14 rounded-xl text-base"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => edit("password", e.target.value)}
               placeholder="At least 8 characters"
             />
+            <FieldError id="new-password-error" message={errors.password} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirm-password">Confirm new password</Label>
             <Input
               id="confirm-password"
+              ref={confirmRef}
               type="password"
               required
               autoComplete="new-password"
+              aria-invalid={!!errors.confirm}
+              aria-describedby={errors.confirm ? "confirm-password-error" : undefined}
               className="h-14 rounded-xl text-base"
               value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
+              onChange={(e) => edit("confirm", e.target.value)}
               placeholder="Type it again"
             />
+            <FieldError id="confirm-password-error" message={errors.confirm} />
           </div>
+
+          <FieldError id="reset-error" message={errors.form} />
+
           <Button
             type="submit"
             disabled={busy || gate !== "ready"}
