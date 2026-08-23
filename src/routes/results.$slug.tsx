@@ -302,6 +302,7 @@ function ResultsPage() {
               total={total}
               tz={tz}
               disabled={lockSlotM.isPending || locked}
+              canLock={canDecide}
               onLock={() => lockSlotM.mutate(s.slot.id)}
             />
           ))}
