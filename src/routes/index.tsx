@@ -46,9 +46,15 @@ function Index() {
 
       <ul className="mt-8 space-y-4">
         {[
-          { icon: Clock, text: "Templates narrow the options, so nobody sees a wall of times." },
-          { icon: Users, text: "Quorum, not unanimity — good enough beats everyone." },
-          { icon: CalendarCheck, text: "Recurring: lock the cadence once, confirm each session." },
+          {
+            icon: Clock,
+            text: "Use natural language or choose from an event template below to create an event",
+          },
+          { icon: Users, text: "Quorum or required? Decide if good enough beats everyone." },
+          {
+            icon: CalendarCheck,
+            text: "Create recurring events: lock the cadence once, confirm each session.",
+          },
         ].map(({ icon: Icon, text }) => (
           <li key={text} className="flex min-w-0 items-start gap-3">
             <Icon className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
