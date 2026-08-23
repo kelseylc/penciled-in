@@ -55,7 +55,7 @@ const emailSchema = z.string().trim().email("That doesn't look like an email").m
 const passwordSchema = z.string().min(8, "Passwords need at least 8 characters").max(200);
 const displayNameSchema = z.string().trim().min(1, "Add a name your group will recognize").max(80);
 
-type Mode = "login" | "signup" | "forgot" | "reset" | "verify-email";
+type Mode = "login" | "signup" | "forgot" | "forgot-sent" | "reset" | "verify-email";
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -172,7 +172,9 @@ function AuthPage() {
     }
   }
 
-  async function startPasswordReset() {
+  /** Sends the recovery link from the forgot-password form, then confirms it went. */
+  async function submitPasswordReset(e: React.FormEvent) {
+    e.preventDefault();
     const address = parseEmail();
     if (!address) return;
     setBusy(true);
@@ -182,7 +184,7 @@ function AuthPage() {
       });
       if (error) throw error;
       setCooldown(30);
-      setMode("forgot");
+      setMode("forgot-sent");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Couldn't send the email");
     } finally {
@@ -253,25 +255,29 @@ function AuthPage() {
 
   const heading =
     mode === "forgot"
-      ? "Check your email"
-      : mode === "verify-email"
-        ? "Confirm your email"
-        : mode === "reset"
-          ? "Set a new password"
-          : mode === "signup"
-            ? "Create your organizer account"
-            : "Welcome back";
+      ? "Reset your password"
+      : mode === "forgot-sent"
+        ? "Check your email"
+        : mode === "verify-email"
+          ? "Confirm your email"
+          : mode === "reset"
+            ? "Set a new password"
+            : mode === "signup"
+              ? "Create your organizer account"
+              : "Welcome back";
 
   const sub =
     mode === "forgot"
-      ? `We sent a password reset link to ${email.trim()}. Tap it to choose a new password.`
-      : mode === "verify-email"
-        ? `We sent a confirmation email to ${email.trim()}. Tap the button in it to activate your account.`
-        : mode === "reset"
-          ? "At least 8 characters. No symbol gymnastics required."
-          : mode === "signup"
-            ? "Organizers need an account. Responding to a plan never does."
-            : "Sign in to see your plans. Responding to a plan never needs an account.";
+      ? "Enter the email you signed up with and we'll send you a link to pick a new password."
+      : mode === "forgot-sent"
+        ? `We sent a password reset link to ${email.trim()}. Tap it to choose a new password.`
+        : mode === "verify-email"
+          ? `We sent a confirmation email to ${email.trim()}. Tap the button in it to activate your account.`
+          : mode === "reset"
+            ? "At least 8 characters. No symbol gymnastics required."
+            : mode === "signup"
+              ? "Organizers need an account. Responding to a plan never does."
+              : "Sign in to see your plans. Responding to a plan never needs an account.";
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-5 pb-10 pt-2 text-base">
@@ -332,7 +338,7 @@ function AuthPage() {
           <div className="flex flex-col gap-1 pt-2">
             <button
               type="button"
-              onClick={startPasswordReset}
+              onClick={() => setMode("forgot")}
               className="min-h-11 text-sm text-muted-foreground underline underline-offset-4"
             >
               Forgot your password?
@@ -435,6 +441,35 @@ function AuthPage() {
       )}
 
       {mode === "forgot" && (
+        <form onSubmit={submitPasswordReset} className="mt-8 space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="forgot-email">Email</Label>
+            <Input
+              id="forgot-email"
+              type="email"
+              required
+              autoComplete="email"
+              inputMode="email"
+              className="h-14 rounded-xl text-base"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+            />
+          </div>
+          <Button type="submit" disabled={busy} className="h-14 w-full rounded-2xl text-base">
+            {busy ? "Sending…" : "Send reset link"}
+          </Button>
+          <button
+            type="button"
+            onClick={backToLogin}
+            className="min-h-11 w-full text-sm text-muted-foreground underline underline-offset-4"
+          >
+            Back to sign in
+          </button>
+        </form>
+      )}
+
+      {mode === "forgot-sent" && (
         <div className="mt-8 space-y-5">
           <p className="rounded-2xl bg-card p-4 text-sm text-muted-foreground">
             Tap the link in the email to pick a new password, then come back here.
