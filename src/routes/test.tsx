@@ -128,8 +128,17 @@ function TestModePage() {
                 label="Review time options"
                 hint="Jumps to Step 7 with a prefilled plan — edit, remove, add slots"
               />
-              <Row href="/home" label="Your sessions" hint="Upcoming occurrences, at-risk banner" />
-              <Row href="/auth" label="Sign in" hint="Email code sign-in" />
+              <Row href="/home" label="My events" hint="Next session, at-risk banner, empty state" />
+              <Row href="/groups" label="My groups" hint="Saved groups list + create" />
+            </section>
+
+            <section className="space-y-2">
+              <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
+                Accounts
+              </h2>
+              <Row href="/auth" label="Sign in" hint="Email + password" />
+              <Row href="/auth?mode=signup" label="Create account" hint="Ends on confirm-email screen" />
+              <Row href="/auth?mode=forgot" label="Forgot password" hint="Recovery link email" />
             </section>
 
             <section className="space-y-2">
