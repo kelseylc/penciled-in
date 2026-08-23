@@ -122,7 +122,12 @@ function TestModePage() {
                 Organizer screens
               </h2>
               <Row href="/" label="Landing" hint="Home page and CTAs" />
-              <Row href="/new" label="Create a plan" hint="6-step wizard" />
+              <Row href="/new" label="Create a plan" hint="7-step wizard, ends on Review" />
+              <Row
+                href="/new?demo=1"
+                label="Review time options"
+                hint="Jumps to Step 7 with a prefilled plan — edit, remove, add slots"
+              />
               <Row href="/home" label="Your sessions" hint="Upcoming occurrences, at-risk banner" />
               <Row href="/auth" label="Sign in" hint="Email code sign-in" />
             </section>

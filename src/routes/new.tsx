@@ -39,8 +39,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/new")({
-  validateSearch: (search: Record<string, unknown>): { draft?: 1 } =>
-    search["draft"] ? { draft: 1 } : {},
+  validateSearch: (search: Record<string, unknown>): { draft?: 1; demo?: 1 } => ({
+    ...(search["draft"] ? { draft: 1 as const } : {}),
+    ...(search["demo"] ? { demo: 1 as const } : {}),
+  }),
 
   head: () => ({
     meta: [
@@ -143,6 +145,29 @@ function NewProject() {
     setStep(parsedPeople.length === 0 ? 3 : draft.name ? 4 : 1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search.draft, session]);
+
+  // Demo deep link (/new?demo=1): prefill a plan and jump straight to the Review step.
+  useEffect(() => {
+    if (!search.demo) return;
+    setTemplateId("dinner");
+    setName("Demo dinner");
+    setMode("one_off");
+    setWindowMode("rolling");
+    setRollingWeeks(2);
+    setPeople(
+      ["Maya", "Devon", "Priya", "Sam"].map((n, i) => ({
+        key: crypto.randomUUID(),
+        display_name: n,
+        timezone: tz,
+        is_required: i < 2,
+        profile_id: null,
+      })),
+    );
+    setQuorum(3);
+    setQuorumTouched(true);
+    setStep(STEPS.length - 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.demo]);
 
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/auth" });
