@@ -37,6 +37,10 @@ function Index() {
         account or calendar syncing needed.
       </p>
 
+      <div className="mt-7">
+        <PlanPrompt />
+      </div>
+
       <ul className="mt-8 space-y-4">
         {[
           { icon: Clock, text: "Templates narrow the options, so nobody sees a wall of times." },
@@ -49,6 +53,7 @@ function Index() {
           </li>
         ))}
       </ul>
+
 
       <div className="mt-auto pt-10">
         <Link
