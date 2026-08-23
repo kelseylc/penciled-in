@@ -1,4 +1,4 @@
-import { Link, useRouter } from "@tanstack/react-router";
+import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 import { ArrowLeft, CalendarCheck, CalendarPlus, LogIn, LogOut, Menu, Users } from "lucide-react";
 
 import {
@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { safeRedirect } from "@/lib/auth-links";
 
 type Props = {
   /** Show a back control. Defaults to true. */
@@ -21,6 +22,9 @@ type Props = {
 export function AppBar({ back = true, title }: Props) {
   const router = useRouter();
   const { session } = useAuth();
+  // Sign in from wherever they are and come back to it, not to /home.
+  const here = useRouterState({ select: (s) => s.location.href });
+  const redirect = safeRedirect(here);
 
   return (
     <div className="sticky top-0 z-40 mb-4 flex items-center gap-1 border-b border-border/60 bg-background/90 py-2 backdrop-blur">
@@ -48,6 +52,7 @@ export function AppBar({ back = true, title }: Props) {
       {!session && (
         <Link
           to="/auth"
+          search={{ ...(redirect ? { redirect } : {}) }}
           className="flex min-h-11 shrink-0 items-center rounded-xl px-3 text-sm font-semibold text-foreground hover:bg-accent/40"
         >
           Sign in
@@ -89,7 +94,11 @@ export function AppBar({ back = true, title }: Props) {
             </DropdownMenuItem>
           ) : (
             <DropdownMenuItem asChild>
-              <Link to="/auth" className="cursor-pointer">
+              <Link
+                to="/auth"
+                search={{ ...(redirect ? { redirect } : {}) }}
+                className="cursor-pointer"
+              >
                 <LogIn className="mr-2 size-4" aria-hidden /> Sign in
               </Link>
             </DropdownMenuItem>

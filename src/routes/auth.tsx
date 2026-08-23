@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { claimParticipants } from "@/lib/claim.functions";
+import { readAuthErrorFromUrl, safeRedirect, type AuthLinkError } from "@/lib/auth-links";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -31,9 +32,16 @@ export const Route = createFileRoute("/auth")({
     ],
   }),
   // ?mode=signup|forgot deep-links a specific screen (used by /test auditing).
-  validateSearch: (search: Record<string, unknown>): { mode?: "signup" | "forgot" } => {
+  // ?redirect=/path is where sign-in returns you to; anything off-site is dropped.
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { mode?: "signup" | "forgot"; redirect?: string } => {
     const m = search["mode"];
-    return m === "signup" || m === "forgot" ? { mode: m } : {};
+    const dest = safeRedirect(search["redirect"]);
+    return {
+      ...(m === "signup" || m === "forgot" ? { mode: m } : {}),
+      ...(dest ? { redirect: dest } : {}),
+    };
   },
   component: AuthPage,
 });
@@ -55,6 +63,12 @@ const emailSchema = z.string().trim().email("That doesn't look like an email").m
 const passwordSchema = z.string().min(8, "Passwords need at least 8 characters").max(200);
 const displayNameSchema = z.string().trim().min(1, "Add a name your group will recognize").max(80);
 
+/**
+ * Captured at import time and consumed once: the Supabase client wipes the
+ * error out of the URL the moment it initializes, which happens in an effect.
+ */
+let pendingLinkError = readAuthErrorFromUrl();
+
 type Mode = "login" | "signup" | "forgot" | "forgot-sent" | "reset" | "verify-email";
 
 function AuthPage() {
@@ -62,7 +76,10 @@ function AuthPage() {
   const { session, loading } = useAuth();
   const claim = useServerFn(claimParticipants);
 
-  const { mode: modeParam } = Route.useSearch() as { mode?: Mode };
+  const { mode: modeParam, redirect } = Route.useSearch() as {
+    mode?: Mode;
+    redirect?: string;
+  };
   const [mode, setMode] = useState<Mode>(modeParam ?? "login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -71,6 +88,8 @@ function AuthPage() {
   const [cooldown, setCooldown] = useState(0);
   const [settingPassword, setSettingPassword] = useState(false);
   const [unconfirmedHint, setUnconfirmedHint] = useState(false);
+  const [existingAccount, setExistingAccount] = useState(false);
+  const [linkError, setLinkError] = useState<AuthLinkError | null>(null);
 
   // Claim guest history and route onward once signed in — unless we're mid
   // password reset, in which case stay on the reset form.
@@ -79,11 +98,19 @@ function AuthPage() {
     const tokens = storedGuestTokens();
     claim({ data: { tokens } })
       .then((r) => {
-        if (r.claimed > 0) toast.success(`Linked ${r.claimed} of your past answers to this account`);
+        if (r.claimed > 0)
+          toast.success(`Linked ${r.claimed} of your past answers to this account`);
       })
       .catch(() => void 0)
-      .finally(() => navigate({ to: "/home" }));
-  }, [loading, session, navigate, claim, settingPassword]);
+      .finally(() => navigate({ href: redirect ?? "/home", replace: true }));
+  }, [loading, session, navigate, claim, settingPassword, redirect]);
+
+  // Surfaced from a state the server never rendered, so hydration still matches.
+  useEffect(() => {
+    if (!pendingLinkError) return;
+    setLinkError(pendingLinkError);
+    pendingLinkError = null;
+  }, []);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -102,6 +129,13 @@ function AuthPage() {
     });
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  /** Any edit to the credentials invalidates the hints about the last attempt. */
+  function clearHints() {
+    setUnconfirmedHint(false);
+    setExistingAccount(false);
+    setLinkError(null);
+  }
 
   function parseEmail(): string | null {
     const parsed = emailSchema.safeParse(email);
@@ -163,6 +197,15 @@ function AuthPage() {
       });
       if (error) throw error;
       if (data.session) return; // Auto-confirm on: the listener takes it from here.
+      // Supabase answers an already-registered address with a success payload
+      // carrying no identities, and sends no email — so waiting on the confirm
+      // screen would be waiting forever. Send them to sign in instead.
+      if (data.user && (data.user.identities?.length ?? 0) === 0) {
+        setPassword("");
+        setExistingAccount(true);
+        setMode("login");
+        return;
+      }
       setCooldown(30);
       setMode("verify-email");
     } catch (err) {
@@ -251,6 +294,7 @@ function AuthPage() {
     setMode("login");
     setSettingPassword(false);
     setPassword("");
+    clearHints();
   }
 
   const heading =
@@ -285,6 +329,32 @@ function AuthPage() {
       <h1 className="text-3xl font-black tracking-tight">{heading}</h1>
       <p className="mt-2 text-sm text-muted-foreground">{sub}</p>
 
+      {linkError && (
+        <div
+          role="alert"
+          className="mt-6 rounded-2xl border border-destructive/40 bg-destructive/10 p-4 text-sm"
+        >
+          <p className="font-bold text-destructive">That link didn't work</p>
+          <p className="mt-1 text-muted-foreground">{linkError.message}</p>
+        </div>
+      )}
+
+      {existingAccount && mode === "login" && (
+        <div role="alert" className="mt-6 rounded-2xl bg-card p-4 text-sm text-muted-foreground">
+          <p>
+            That email already has an account. Sign in below — or reset the password if you don't
+            remember it.
+          </p>
+          <button
+            type="button"
+            onClick={() => setMode("forgot")}
+            className="mt-2 min-h-11 text-sm font-bold text-primary"
+          >
+            Reset my password
+          </button>
+        </div>
+      )}
+
       {mode === "login" && (
         <form onSubmit={submitLogin} className="mt-8 space-y-4">
           <div className="space-y-2">
@@ -297,7 +367,10 @@ function AuthPage() {
               inputMode="email"
               className="h-14 rounded-xl text-base"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                clearHints();
+              }}
               placeholder="you@example.com"
             />
           </div>
@@ -310,7 +383,10 @@ function AuthPage() {
               autoComplete="current-password"
               className="h-14 rounded-xl text-base"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                clearHints();
+              }}
               placeholder="At least 8 characters"
             />
           </div>

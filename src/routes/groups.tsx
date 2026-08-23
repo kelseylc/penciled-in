@@ -70,6 +70,7 @@ function GroupsPage() {
         </p>
         <Link
           to="/auth"
+          search={{ redirect: "/groups" }}
           className="mt-6 flex h-14 w-full items-center justify-center rounded-2xl bg-primary text-base font-bold text-primary-foreground"
         >
           Sign in

@@ -170,7 +170,8 @@ function NewProject() {
   }, [search.demo]);
 
   useEffect(() => {
-    if (!loading && !session) navigate({ to: "/auth" });
+    if (!loading && !session)
+      navigate({ to: "/auth", search: { redirect: "/new" }, replace: true });
   }, [loading, session, navigate]);
 
   useEffect(() => {
