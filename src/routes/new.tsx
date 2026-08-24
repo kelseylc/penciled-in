@@ -11,6 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { RequireAuth } from "@/components/RequireAuth";
@@ -33,10 +40,7 @@ import {
   describeDays,
   formatDuration,
   formatHour,
-  getTemplate,
-  TEMPLATES,
   type EventConstraints,
-  type TemplateId,
 } from "@/lib/templates";
 import { zoneLabel } from "@/lib/timezones";
 import { cn } from "@/lib/utils";
@@ -53,12 +57,12 @@ export const Route = createFileRoute("/new")({
       {
         name: "description",
         content:
-          "Create a group plan in a few taps: pick a template, a date window, your people, and a quorum.",
+          "Create a group plan in a few taps: name it, pick a date window, your people, and a quorum.",
       },
       { property: "og:title", content: "New plan — Penciled.in" },
       {
         property: "og:description",
-        content: "Pick a template, a date window, your people, and a quorum. Then share one link.",
+        content: "Name it, pick a date window, your people, and a quorum. Then share one link.",
       },
     ],
   }),
@@ -76,7 +80,7 @@ type Person = {
 
 type GroupRow = { id: string; name: string };
 
-const STEPS = ["Template", "Name", "Dates", "People", "Quorum", "Deadline", "Review"] as const;
+const STEPS = ["Event", "People", "Quorum", "Deadline", "Review"] as const;
 
 function NewRoute() {
   return (
@@ -94,7 +98,6 @@ function NewProject() {
   const tz = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", []);
 
   const [step, setStep] = useState(0);
-  const [templateId, setTemplateId] = useState<TemplateId | null>(null);
   const [constraints, setConstraints] = useState<EventConstraints>({
     days: [0, 1, 2, 3, 4, 5, 6],
     startAfter: 9,
@@ -128,7 +131,6 @@ function NewProject() {
     if (!search.draft || !session) return;
     const draft = takeDraft();
     if (!draft) return;
-    setTemplateId(draft.template);
     setConstraints({
       days: draft.days,
       startAfter: draft.startAfter,
@@ -155,14 +157,13 @@ function NewProject() {
     }
     if (draft.deadlineDays) setDeadline(addDays(new Date(), draft.deadlineDays));
     setDraftNote({ summary: draft.summary, missing: draft.missing });
-    setStep(parsedPeople.length === 0 ? 3 : draft.name ? 4 : 1);
+    setStep(parsedPeople.length === 0 ? 1 : 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search.draft, session]);
 
   // Demo deep link (/new?demo=1): prefill a plan and jump straight to the Review step.
   useEffect(() => {
     if (!search.demo) return;
-    setTemplateId("dinner");
     setName("Demo dinner");
     setMode("one_off");
     setWindowMode("rolling");
@@ -197,7 +198,6 @@ function NewProject() {
     }
   }, [people.length, quorumTouched]);
 
-  const template = templateId ? getTemplate(templateId) : null;
 
   const windowStart = windowMode === "rolling" ? new Date() : (range?.from ?? new Date());
   const windowEnd =
@@ -206,7 +206,6 @@ function NewProject() {
       : (range?.to ?? addDays(range?.from ?? new Date(), 7));
 
   const generation = useMemo(() => {
-    if (!template) return null;
     return generateCandidateSlots({
       constraints,
       windowStart: format(windowStart, "yyyy-MM-dd"),
@@ -215,7 +214,6 @@ function NewProject() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    template,
     constraints,
     tz,
     format(windowStart, "yyyy-MM-dd"),
@@ -283,9 +281,9 @@ function NewProject() {
   }
 
   const canAdvance = [
-    !!templateId && constraints.days.length > 0,
-    name.trim().length > 0,
-    windowMode === "rolling" || (!!range?.from && !!range?.to),
+    name.trim().length > 0 &&
+      constraints.days.length > 0 &&
+      (windowMode === "rolling" || (!!range?.from && !!range?.to)),
     people.length > 0,
     quorum >= 1,
     true,
@@ -293,13 +291,13 @@ function NewProject() {
   ][step];
 
   async function submit() {
-    if (!template || !generation) return;
+    if (!generation) return;
     setBusy(true);
     try {
       const result = await create({
         data: {
           name: name.trim(),
-          template: template.id,
+          template: "hang",
           duration_minutes: effectiveDurationMinutes(constraints),
           mode,
           cadence: mode === "recurring" ? cadence : null,
@@ -606,7 +604,7 @@ function NewProject() {
         )}
 
 
-        {step === 3 && (
+        {step === 1 && (
           <section>
             <h1 className="text-2xl font-black tracking-tight">Who's invited?</h1>
 
@@ -751,7 +749,7 @@ function NewProject() {
           </section>
         )}
 
-        {step === 4 && (
+        {step === 2 && (
           <section>
             <h1 className="text-2xl font-black tracking-tight">How many is enough?</h1>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -790,7 +788,7 @@ function NewProject() {
           </section>
         )}
 
-        {step === 5 && (
+        {step === 3 && (
           <section>
             <h1 className="text-2xl font-black tracking-tight">Responses needed by</h1>
             <div className="mt-5 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-2xl border border-border p-4">
@@ -818,7 +816,7 @@ function NewProject() {
           </section>
         )}
 
-        {step === 6 && (
+        {step === 4 && (
           <section>
             <h1 className="text-2xl font-black tracking-tight">Review the options</h1>
             <p className="mt-1 text-sm text-muted-foreground">
