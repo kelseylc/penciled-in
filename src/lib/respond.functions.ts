@@ -1,6 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import { parseWeeklyPattern, type WeeklyPattern } from "@/lib/weekly-availability";
+
+
 const tokenSchema = z
   .string()
   .regex(/^[a-f0-9]{16,80}$/i)
