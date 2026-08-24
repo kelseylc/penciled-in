@@ -356,14 +356,18 @@ export function enumerateCadences(
       durationMinutes,
     )}`;
 
+    const metProjectedCount = metCount - metConfirmedCount;
+    const projectedNote =
+      metProjectedCount > 0 ? ` (${metProjectedCount} projected from usual schedules)` : "";
+
     const tradeoff =
       neverAvailable.length > 0
-        ? `${metCount} of ${total}, but never with ${listNames(neverAvailable)}`
+        ? `${metCount} of ${total}${projectedNote}, but never with ${listNames(neverAvailable)}`
         : sometimesMissing.length > 0
-          ? `${metCount} of ${total} — ${listNames(sometimesMissing)} ${
+          ? `${metCount} of ${total}${projectedNote} — ${listNames(sometimesMissing)} ${
               sometimesMissing.length === 1 ? "misses" : "miss"
             } some sessions`
-          : `${metCount} of ${total}, everyone can make all of them`;
+          : `${metCount} of ${total}${projectedNote}, everyone can make all of them`;
 
     options.push({
       weekday: pair.weekday,
@@ -371,7 +375,10 @@ export function enumerateCadences(
       durationMinutes,
       occurrences,
       metCount,
+      metConfirmedCount,
+      metProjectedCount,
       totalCount: total,
+
       neverAvailable,
       sometimesMissing,
       label,
