@@ -389,6 +389,10 @@ export function enumerateCadences(
 
   return options.sort((a, b) => {
     if (b.metCount !== a.metCount) return b.metCount - a.metCount;
+    // Real answers beat projections when the totals tie.
+    if (b.metConfirmedCount !== a.metConfirmedCount)
+      return b.metConfirmedCount - a.metConfirmedCount;
+
     if (a.neverAvailable.length !== b.neverAvailable.length)
       return a.neverAvailable.length - b.neverAvailable.length;
     if (a.sometimesMissing.length !== b.sometimesMissing.length)
