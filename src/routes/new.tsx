@@ -66,7 +66,8 @@ export const Route = createFileRoute("/new")({
 type Person = {
   key: string;
   display_name: string;
-  timezone: string;
+  /** null = unknown; the invitee sets it when they respond. */
+  timezone: string | null;
   is_required: boolean;
   profile_id: string | null;
 };
@@ -140,7 +141,7 @@ function NewProject() {
     const parsedPeople = draft.people.map((p) => ({
       key: crypto.randomUUID(),
       display_name: p.display_name,
-      timezone: tz,
+      timezone: null,
       is_required: p.is_required,
       profile_id: null,
     }));
@@ -167,7 +168,7 @@ function NewProject() {
       ["Maya", "Devon", "Priya", "Sam"].map((n, i) => ({
         key: crypto.randomUUID(),
         display_name: n,
-        timezone: tz,
+        timezone: null,
         is_required: i < 2,
         profile_id: null,
       })),
@@ -255,7 +256,7 @@ function NewProject() {
       (data ?? []).map((m) => ({
         key: m.id,
         display_name: m.display_name,
-        timezone: m.timezone ?? tz,
+        timezone: m.timezone,
         is_required: m.is_required_default,
         profile_id: m.profile_id,
       })),
@@ -270,7 +271,7 @@ function NewProject() {
       {
         key: crypto.randomUUID(),
         display_name: value,
-        timezone: tz,
+        timezone: null,
         is_required: false,
         profile_id: null,
       },
@@ -307,7 +308,7 @@ function NewProject() {
           group_id: groupId,
           participants: people.map((p) => ({
             display_name: p.display_name,
-            timezone: p.timezone,
+            timezone: p.timezone ?? tz,
             is_required: p.is_required,
             profile_id: p.profile_id,
           })),
