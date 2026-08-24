@@ -91,22 +91,25 @@ export type Database = {
       default_availability: {
         Row: {
           blackout_dates: string[]
-          group_member_id: string
+          group_member_id: string | null
           id: string
+          profile_id: string | null
           updated_at: string
           weekly_pattern: Json
         }
         Insert: {
           blackout_dates?: string[]
-          group_member_id: string
+          group_member_id?: string | null
           id?: string
+          profile_id?: string | null
           updated_at?: string
           weekly_pattern?: Json
         }
         Update: {
           blackout_dates?: string[]
-          group_member_id?: string
+          group_member_id?: string | null
           id?: string
+          profile_id?: string | null
           updated_at?: string
           weekly_pattern?: Json
         }
@@ -116,6 +119,13 @@ export type Database = {
             columns: ["group_member_id"]
             isOneToOne: false
             referencedRelation: "group_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "default_availability_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
