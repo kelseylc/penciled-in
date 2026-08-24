@@ -302,6 +302,7 @@ export function enumerateCadences(
 
     const occurrences: string[] = [];
     let metCount = 0;
+    let metConfirmedCount = 0;
     const missedBy = new Map<string, number>();
     const availableAtLeastOnce = new Set<string>();
 
@@ -313,16 +314,31 @@ export function enumerateCadences(
       let yes = 0;
       let maybe = 0;
       let requiredOk = true;
+      // Same tally, but ignoring standing patterns, so a pattern-based guess
+      // never poses as a real answer in the number the organizer trusts.
+      let answeredYes = 0;
+      let answeredMaybe = 0;
+      let answeredRequiredOk = true;
       for (const p of participants) {
+        // An explicit answer always wins over a pattern-projected one.
         const explicit = pairStates.get(day)?.get(p.id);
-        const state = explicit ?? stateFromDefaults(p, cursor) ?? usual.get(p.id) ?? undefined;
+        const answered = explicit ?? usual.get(p.id);
+        const state =
+          explicit ?? stateFromDefaults(p, cursor, utc.toISOString(), timezone) ?? answered;
         if (state === "yes") yes += 1;
         else if (state === "maybe") maybe += 1;
+        if (answered === "yes") answeredYes += 1;
+        else if (answered === "maybe") answeredMaybe += 1;
+        if (p.is_required && answered !== "yes" && answered !== "maybe") answeredRequiredOk = false;
         if (state === "yes" || state === "maybe") availableAtLeastOnce.add(p.id);
         else missedBy.set(p.id, (missedBy.get(p.id) ?? 0) + 1);
         if (p.is_required && state !== "yes" && state !== "maybe") requiredOk = false;
       }
-      if (requiredOk && yes + maybe >= quorumMin) metCount += 1;
+      if (requiredOk && yes + maybe >= quorumMin) {
+        metCount += 1;
+        if (answeredRequiredOk && answeredYes + answeredMaybe >= quorumMin) metConfirmedCount += 1;
+      }
+
 
       cursor = advance(cursor, cadence);
       cursor.setHours(Number(pair.startTime.slice(0, 2)), Number(pair.startTime.slice(3, 5)), 0, 0);
