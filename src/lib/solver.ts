@@ -181,7 +181,12 @@ export interface CadenceOption {
   /** Projected occurrence start times (UTC ISO). */
   occurrences: string[];
   metCount: number;
+  /** Of metCount, how many rested only on real answers. */
+  metConfirmedCount: number;
+  /** Of metCount, how many needed a pattern-projected answer to get there. */
+  metProjectedCount: number;
   totalCount: number;
+
   /** Participants who are never available across the projection. */
   neverAvailable: string[];
   /** Participants who miss at least one projected occurrence. */
