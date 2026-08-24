@@ -209,13 +209,23 @@ function advance(date: Date, cadence: Cadence): Date {
   return addMonths(date, 3);
 }
 
-function stateFromDefaults(p: SolverParticipant, localDate: Date): SlotState | undefined {
+function stateFromDefaults(
+  p: SolverParticipant,
+  localDate: Date,
+  utcIso: string,
+  fallbackTimezone: string,
+): SlotState | undefined {
   const iso = format(localDate, "yyyy-MM-dd");
   if (p.blackout_dates?.includes(iso)) return "no";
-  const pattern = p.weekly_pattern?.[String(localDate.getDay())];
-  if (!pattern || pattern.length === 0) return undefined;
-  return pattern.includes(daypartOfHour(localDate.getHours())) ? "yes" : "no";
+  const covered = patternCoversSlot(
+    p.weekly_pattern,
+    p.timezone || fallbackTimezone,
+    utcIso,
+  );
+  // No standing signal is unknown, never an implied no.
+  return covered ?? undefined;
 }
+
 
 /**
  * Enumerate every (weekday, start time) pair supported by the candidate slots,
