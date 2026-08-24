@@ -56,13 +56,13 @@ export const saveMyAvailability = createServerFn({ method: "POST" })
     if (existing) {
       const { error } = await context.supabase
         .from("default_availability")
-        .update({ weekly_pattern: pattern, updated_at })
+        .update({ weekly_pattern: pattern as unknown as Json, updated_at })
         .eq("id", existing.id);
       if (error) throw new Error(error.message);
     } else {
       const { error } = await context.supabase
         .from("default_availability")
-        .insert({ profile_id: context.userId, weekly_pattern: pattern, updated_at });
+        .insert({ profile_id: context.userId, weekly_pattern: pattern as unknown as Json, updated_at });
       if (error) throw new Error(error.message);
     }
 
