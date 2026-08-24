@@ -87,6 +87,9 @@ function RespondPage() {
   const [name, setName] = useState("");
   const [answers, setAnswers] = useState<Record<string, SlotState>>({});
   const [prefilled, setPrefilled] = useState(false);
+  /** Slots filled in from the saved pattern rather than actually answered. */
+  const [predicted, setPredicted] = useState<Set<string>>(() => new Set());
+
   const [bannerOpen, setBannerOpen] = useState(true);
   const [changingTz, setChangingTz] = useState(false);
   const [welcomeBack, setWelcomeBack] = useState(false);
