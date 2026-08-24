@@ -226,6 +226,13 @@ function RespondPage() {
   });
 
   function cycle(id: string) {
+    // Tapping a predicted answer makes it a real one.
+    setPredicted((current) => {
+      if (!current.has(id)) return current;
+      const copy = new Set(current);
+      copy.delete(id);
+      return copy;
+    });
     setAnswers((current) => {
       const next = NEXT[current[id] ?? "unknown"];
       const copy = { ...current };
@@ -234,6 +241,7 @@ function RespondPage() {
       return copy;
     });
   }
+
 
   function bulkSet(filter: (weekend: boolean) => boolean, state: SlotState | null) {
     if (!bundle) return;
