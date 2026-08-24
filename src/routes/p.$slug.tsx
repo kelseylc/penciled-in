@@ -368,9 +368,10 @@ function RespondPage() {
           <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 rounded-2xl bg-accent p-4 text-accent-foreground">
             <p className="min-w-0 text-sm">
               {staleDefaults
-                ? "This is from a while ago — still right? Tap anything to change it."
-                : "Pre-filled from your usual availability — tap anything to change it."}
+                ? "Predicted from your usual schedule — but that was set a while ago. Tap anything to change it."
+                : "Predicted from your usual schedule (dotted outline) — tap anything to confirm or change it."}
             </p>
+
             <button
               type="button"
               aria-label="Dismiss"
