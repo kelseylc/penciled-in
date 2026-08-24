@@ -662,8 +662,25 @@ function NewProject() {
                   <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
                     <div className="min-w-0">
                       <p className="truncate text-base font-bold">{p.display_name}</p>
-                      <p className="truncate text-xs text-muted-foreground">{p.timezone}</p>
+                      {p.timezone ? (
+                        <p className="truncate text-xs text-muted-foreground">
+                          {zoneLabel(p.timezone)}
+                          {p.profile_id ? "" : " · you set this"}
+                        </p>
+                      ) : (
+                        <p className="truncate text-xs text-muted-foreground">
+                          Timezone set when they respond
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        className="min-h-11 text-xs font-semibold text-primary"
+                        onClick={() => setTzTarget(p.key)}
+                      >
+                        {p.timezone ? "Change timezone" : "Set timezone"}
+                      </button>
                     </div>
+
                     <button
                       type="button"
                       aria-label={`Remove ${p.display_name}`}
