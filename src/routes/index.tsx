@@ -45,24 +45,31 @@ function Index() {
         <PlanPrompt />
       </div>
 
+      <div className="mt-4 flex items-center gap-3" aria-hidden>
+        <span className="h-px flex-1 bg-border" />
+        <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">or</span>
+        <span className="h-px flex-1 bg-border" />
+      </div>
+
       <Link
         to="/new"
-        className="mt-3 flex h-14 w-full items-center justify-center rounded-2xl bg-primary text-base font-bold text-primary-foreground"
+        className="mt-4 flex h-14 w-full items-center justify-center rounded-2xl bg-primary text-base font-bold text-primary-foreground"
       >
-        Create using template
+        Create event manually
       </Link>
 
       <ul className="mt-8 space-y-4">
         {[
           {
             icon: Clock,
-            text: "Use natural language or choose from an event template below to create an event",
+            text: "Describe it in plain words or set it up manually in one screen.",
           },
           { icon: Users, text: "Quorum or required? Decide if good enough beats everyone." },
           {
             icon: CalendarCheck,
             text: "Create recurring events: lock the cadence once, confirm each session.",
           },
+
         ].map(({ icon: Icon, text }) => (
           <li key={text} className="flex min-w-0 items-start gap-3">
             <Icon className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
