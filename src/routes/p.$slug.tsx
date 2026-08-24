@@ -407,12 +407,15 @@ function RespondPage() {
               <div className="mt-2 grid grid-cols-3 gap-2">
                 {day.slots.map((slot) => {
                   const state = answers[slot.id];
+                  const guess = predicted.has(slot.id);
                   const local = toZonedTime(new Date(slot.start_utc), timezone);
                   return (
                     <button
                       key={slot.id}
                       type="button"
-                      aria-label={`${day.label} ${format(local, "h:mm a")} — ${state ?? "not set"}`}
+                      aria-label={`${day.label} ${format(local, "h:mm a")} — ${state ?? "not set"}${
+                        guess ? " (predicted from your usual schedule)" : ""
+                      }`}
                       onClick={() => cycle(slot.id)}
                       className={cn(
                         "h-12 rounded-xl text-sm font-bold transition-colors",
@@ -421,8 +424,10 @@ function RespondPage() {
                         state === "no" &&
                           "border-2 border-muted-foreground/50 text-muted-foreground line-through",
                         !state && "border border-border bg-card",
+                        guess && "border-2 border-dashed border-foreground/60 opacity-80",
                       )}
                     >
+
                       {format(local, "h:mm a").replace(":00", "")}
                     </button>
                   );
