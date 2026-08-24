@@ -6,6 +6,8 @@ import { toZonedTime } from "date-fns-tz";
 import { Check, Mic, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+
+import { allZones, zoneLabel } from "@/lib/timezones";
 import { z } from "zod";
 
 import { AccountUpsellCard } from "@/components/AccountUpsellCard";
@@ -249,7 +251,7 @@ function RespondPage() {
 
   const tzLine = (
     <div className="mt-3 text-xs text-muted-foreground">
-      Times shown in {tzLabel(timezone)} —{" "}
+      Times shown in {tzLabel(timezone)} — not right?{" "}
       <button
         type="button"
         onClick={() => setChangingTz((v) => !v)}
@@ -266,9 +268,9 @@ function RespondPage() {
             setChangingTz(false);
           }}
         >
-          {(Intl.supportedValuesOf?.("timeZone") ?? [timezone]).map((z) => (
+          {allZones(timezone).map((z) => (
             <option key={z} value={z}>
-              {z}
+              {zoneLabel(z)}
             </option>
           ))}
         </select>

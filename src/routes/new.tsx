@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { RequireAuth } from "@/components/RequireAuth";
+import { TimezonePicker } from "@/components/TimezonePicker";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { takeDraft } from "@/lib/plan-draft";
@@ -37,6 +38,7 @@ import {
   type EventConstraints,
   type TemplateId,
 } from "@/lib/templates";
+import { zoneLabel } from "@/lib/timezones";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/new")({
@@ -66,7 +68,8 @@ export const Route = createFileRoute("/new")({
 type Person = {
   key: string;
   display_name: string;
-  timezone: string;
+  /** null = unknown; the invitee sets it when they respond. */
+  timezone: string | null;
   is_required: boolean;
   profile_id: string | null;
 };
@@ -108,6 +111,7 @@ function NewProject() {
   const [groupId, setGroupId] = useState<string | null>(null);
   const [people, setPeople] = useState<Person[]>([]);
   const [newName, setNewName] = useState("");
+  const [tzTarget, setTzTarget] = useState<string | null>(null);
   const [saveAsGroup, setSaveAsGroup] = useState(false);
   const [saveGroupName, setSaveGroupName] = useState("");
   const [quorum, setQuorum] = useState(2);
@@ -140,7 +144,7 @@ function NewProject() {
     const parsedPeople = draft.people.map((p) => ({
       key: crypto.randomUUID(),
       display_name: p.display_name,
-      timezone: tz,
+      timezone: null,
       is_required: p.is_required,
       profile_id: null,
     }));
@@ -167,7 +171,7 @@ function NewProject() {
       ["Maya", "Devon", "Priya", "Sam"].map((n, i) => ({
         key: crypto.randomUUID(),
         display_name: n,
-        timezone: tz,
+        timezone: null,
         is_required: i < 2,
         profile_id: null,
       })),
@@ -255,7 +259,7 @@ function NewProject() {
       (data ?? []).map((m) => ({
         key: m.id,
         display_name: m.display_name,
-        timezone: m.timezone ?? tz,
+        timezone: m.timezone,
         is_required: m.is_required_default,
         profile_id: m.profile_id,
       })),
@@ -270,7 +274,7 @@ function NewProject() {
       {
         key: crypto.randomUUID(),
         display_name: value,
-        timezone: tz,
+        timezone: null,
         is_required: false,
         profile_id: null,
       },
@@ -307,7 +311,7 @@ function NewProject() {
           group_id: groupId,
           participants: people.map((p) => ({
             display_name: p.display_name,
-            timezone: p.timezone,
+            timezone: p.timezone ?? tz,
             is_required: p.is_required,
             profile_id: p.profile_id,
           })),
@@ -661,8 +665,25 @@ function NewProject() {
                   <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
                     <div className="min-w-0">
                       <p className="truncate text-base font-bold">{p.display_name}</p>
-                      <p className="truncate text-xs text-muted-foreground">{p.timezone}</p>
+                      {p.timezone ? (
+                        <p className="truncate text-xs text-muted-foreground">
+                          {zoneLabel(p.timezone)}
+                          {p.profile_id ? "" : " · you set this"}
+                        </p>
+                      ) : (
+                        <p className="truncate text-xs text-muted-foreground">
+                          Timezone set when they respond
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        className="min-h-11 text-xs font-semibold text-primary"
+                        onClick={() => setTzTarget(p.key)}
+                      >
+                        {p.timezone ? "Change timezone" : "Set timezone"}
+                      </button>
                     </div>
+
                     <button
                       type="button"
                       aria-label={`Remove ${p.display_name}`}
@@ -691,6 +712,25 @@ function NewProject() {
                 </li>
               ))}
             </ul>
+
+            <TimezonePicker
+              open={tzTarget !== null}
+              onOpenChange={(o) => !o && setTzTarget(null)}
+              fallback={tz}
+              personName={people.find((x) => x.key === tzTarget)?.display_name}
+              value={people.find((x) => x.key === tzTarget)?.timezone ?? null}
+              onSelect={(zone) =>
+                setPeople((list) =>
+                  list.map((x) => (x.key === tzTarget ? { ...x, timezone: zone } : x)),
+                )
+              }
+              onClear={() =>
+                setPeople((list) =>
+                  list.map((x) => (x.key === tzTarget ? { ...x, timezone: null } : x)),
+                )
+              }
+            />
+
 
             {!groupId && people.length > 1 && (
               <div className="mt-5 rounded-2xl border border-border p-4">
