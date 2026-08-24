@@ -1,47 +1,61 @@
-# Plan: Connect two-way GitHub sync
+# Plan: Fix the timezone label on Step 4 (People)
 
-## Problem
-You pushed commit `2d0b13c` to a GitHub repo ~5 minutes ago, expecting it to land in
-this Lovable preview. It did not. Verified root cause:
+## What's actually happening today
 
-- `git cat-file -t 2d0b13c` → "Not a valid object name" (the commit is not in this repo).
-- `git remote -v` shows only Lovable-internal remotes:
-  - `origin` → `git.private.lovable-gcp.code.storage` (Lovable's managed storage)
-  - `secondary` → `s3://lovable-repositories/...` (S3 mirror)
-- No `github.com` remote exists. There is no path from a GitHub push into this preview.
-- `git fetch origin` returned nothing new; Lovable-side history is unchanged since
-  the 17:28 UTC "Update plan" commit.
+Verified in the code:
 
-The two-way GitHub connector is not connected to this project, so GitHub pushes have
-no bridge into Lovable.
+- When you add someone on Step 4, `new.tsx` assigns them your own detected timezone
+  (`America/New_York`) as a placeholder, and the list row prints that raw IANA string
+  under their name.
+- When the invitee opens the link, `p.$slug.tsx` auto-detects their real timezone and
+  can change it from a picker at the top of the respond screen. Both `joinProject` and
+  `submitResponses` write that value back to their participant row.
 
-## What you'll do (UI steps — I can't click these for you)
-1. Open the **Plus (+) menu** in the chat input (bottom-left of the Lovable editor).
-2. Choose **GitHub → Connect project**.
-3. Authorize the **Lovable GitHub App** on GitHub when prompted.
-4. Select the GitHub account/organization, then **Create Repository** (or pick the
-   existing repo if Lovable offers it — note the limitation below).
-5. Once connected, the two-way sync runs in real time: edits in Lovable push to
-   GitHub, and pushes to GitHub sync back to Lovable.
+So the invitee **does** relabel themselves — the Step 4 value is overwritten the moment
+they respond. The problem is purely UX: we're showing a confident, wrong-looking fact
+that the organizer can't correct and doesn't need to.
 
-## Important limitation
-Per Lovable's GitHub integration, **directly importing an existing GitHub repository
-is not supported**. The flow creates a *new* repo seeded from this project's current
-code. To get your `2d0b13c` changes in after connecting, the practical options are:
-- Re-apply the same edits in the Lovable editor (I can do this from the diff), or
-- After the new repo is created, push `2d0b13c`'s changes onto it from your local
-  clone so they sync back in.
+Note: participant timezone is display metadata only. Slots are generated in the
+organizer's timezone and stored in UTC; the solver and results don't read participant
+timezones. The "N timezones in this group" expander on the decision screen does.
 
-Either way, **after** the connector is linked, future GitHub pushes will sync here
-automatically.
+## Recommendation
 
-## What I'll do once you've connected
-- Confirm the GitHub remote now appears in `git remote -v`.
-- Verify the working tree reflects your intended changes (or re-apply `2d0b13c`'s
-  diff if you prefer I do that).
-- Read the build log to confirm the preview still compiles cleanly.
+Don't ask organizers to be a timezone data-entry clerk. Best practice here is
+**self-declaration with an optional organizer hint**:
+
+1. **Stop asserting a timezone that isn't theirs.** New people show
+   "Timezone set when they respond" instead of `America/New_York`. Honest, and it
+   teaches the model in one line.
+2. **Keep a lightweight override for people the organizer knows are elsewhere.**
+   A small "Set timezone" link on each row opens a searchable timezone picker
+   (city-style labels, e.g. "London — GMT+1", not raw IANA). Chosen values render as a
+   friendly label with a subtle "you set this" hint.
+3. **Show real values when we have them.** People pulled from a saved group already
+   have a confirmed timezone; those rows display it normally, since it came from the
+   person, not a guess.
+4. **Invitee still wins.** Whatever the invitee picks on the respond screen overwrites
+   the organizer's guess. Add one line on the respond screen's timezone control:
+   "Times shown in <zone> — change if that's not right", so the correction is obvious.
+
+Why not force the organizer to set everyone's zone: it's slow, usually unknown, and
+already self-corrects — it would violate the "responding takes under 30 seconds" and
+"the organizer does the least work" spirit of the app.
+
+## Technical changes
+
+- `src/routes/new.tsx`: give each person an optional `timezone` (null by default rather
+  than the organizer's `tz`); render the placeholder copy vs. friendly label; add a
+  per-row timezone picker sheet using `Intl.supportedValuesOf("timeZone")` with a search
+  filter and offset labels; on submit send `p.timezone ?? tz` so the payload stays valid
+  against the existing schema.
+- Shared helper for friendly zone labels (city + current UTC offset), reused by the
+  respond screen so labeling is consistent.
+- `src/routes/p.$slug.tsx`: minor copy nudge on the existing timezone select.
+- No schema, RLS, or server-function changes. `participants.timezone` already holds this.
 
 ## Out of scope
-- No schema, RLS, or auth-code changes in this step.
-- The pending auth (sign-in / sign-up / forgot-password) optimization plan stays
-  on hold until you decide to resume it.
+
+- Per-participant time rendering in the organizer's slot review (slots stay in the
+  organizer's zone).
+- Editing a participant's timezone after the plan is created.
