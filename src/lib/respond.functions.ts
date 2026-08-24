@@ -89,12 +89,29 @@ export const getRespondBundle = createServerFn({ method: "POST" })
           .eq("participant_id", participant.id);
 
         let defaults: {
-          weekly_pattern: Record<string, string[]>;
+          weekly_pattern: WeeklyPattern;
           blackout_dates: string[];
           updated_at: string;
         } | null = null;
 
-        if (participant.profile_id && project.group_id) {
+        if (participant.profile_id) {
+          // Account-level standing availability first: it's the one a person
+          // sets from "Your usual availability" and applies to every plan.
+          const { data: mine } = await supabaseAdmin
+            .from("default_availability")
+            .select("weekly_pattern, blackout_dates, updated_at")
+            .eq("profile_id", participant.profile_id)
+            .maybeSingle();
+          if (mine) {
+            defaults = {
+              weekly_pattern: parseWeeklyPattern(mine.weekly_pattern),
+              blackout_dates: mine.blackout_dates ?? [],
+              updated_at: mine.updated_at,
+            };
+          }
+        }
+
+        if (!defaults && participant.profile_id && project.group_id) {
           const { data: member } = await supabaseAdmin
             .from("group_members")
             .select("id")
@@ -109,13 +126,14 @@ export const getRespondBundle = createServerFn({ method: "POST" })
               .maybeSingle();
             if (da) {
               defaults = {
-                weekly_pattern: (da.weekly_pattern ?? {}) as Record<string, string[]>,
+                weekly_pattern: parseWeeklyPattern(da.weekly_pattern),
                 blackout_dates: da.blackout_dates ?? [],
                 updated_at: da.updated_at,
               };
             }
           }
         }
+
 
         me = {
           id: participant.id,
