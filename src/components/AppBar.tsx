@@ -84,6 +84,14 @@ export function AppBar({ back = true, title }: Props) {
               <Users className="mr-2 size-4" aria-hidden /> My groups
             </Link>
           </DropdownMenuItem>
+          {session && (
+            <DropdownMenuItem asChild>
+              <Link to="/availability" className="cursor-pointer">
+                <Clock className="mr-2 size-4" aria-hidden /> My usual availability
+              </Link>
+            </DropdownMenuItem>
+          )}
+
           <DropdownMenuSeparator />
           {session ? (
             <DropdownMenuItem
