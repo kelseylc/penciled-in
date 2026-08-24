@@ -79,28 +79,58 @@ type Sent = { kind: "confirm" | "reset"; email: string };
 const SENT_KEY = "penciled:auth-sent";
 /** Long enough to check a phone, short enough not to greet a new visit. */
 const SENT_TTL_MS = 30 * 60 * 1000;
+const COOLDOWN_SECONDS = 30;
 
-function rememberSent(next: Sent | null) {
+/**
+ * The screen and its resend cooldown are remembered together. Remembering only
+ * the screen would re-arm the button on every reload, and the answer to that is
+ * Supabase's rate limiter rather than ours.
+ */
+function rememberSent(next: Sent | null, until = 0) {
   try {
     if (!next) sessionStorage.removeItem(SENT_KEY);
-    else sessionStorage.setItem(SENT_KEY, JSON.stringify({ ...next, at: Date.now() }));
+    else sessionStorage.setItem(SENT_KEY, JSON.stringify({ ...next, at: Date.now(), until }));
   } catch {
     /* storage blocked — the screen still works, it just won't survive a reload */
   }
 }
 
-function recallSent(): Sent | null {
+function recallSent(): { sent: Sent; cooldown: number } | null {
   try {
     const raw = sessionStorage.getItem(SENT_KEY);
     if (!raw) return null;
-    const saved = JSON.parse(raw) as Partial<Sent> & { at?: number };
+    const saved = JSON.parse(raw) as Partial<Sent> & { at?: number; until?: number };
     const fresh = typeof saved.at === "number" && Date.now() - saved.at < SENT_TTL_MS;
     if (!fresh || typeof saved.email !== "string") return null;
     if (saved.kind !== "confirm" && saved.kind !== "reset") return null;
-    return { kind: saved.kind, email: saved.email };
+    const left = typeof saved.until === "number" ? saved.until - Date.now() : 0;
+    return {
+      sent: { kind: saved.kind, email: saved.email },
+      cooldown: Math.max(0, Math.ceil(left / 1000)),
+    };
   } catch {
     return null;
   }
+}
+
+/**
+ * Supabase answers a too-soon resend with its own wording ("For security
+ * purposes, you can only request this after 47 seconds"). Say it the way the
+ * rest of the screen speaks, and hand back the wait so the button can show it.
+ */
+function describeSendError(err: unknown): { message: string; retryAfter: number } {
+  const raw = err instanceof Error ? err.message : "";
+  const seconds = Number(/after (\d+) seconds?/i.exec(raw)?.[1] ?? 0);
+  if (seconds > 0) {
+    return {
+      message: `Hang on — you can ask for another email in ${seconds}s.`,
+      retryAfter: seconds,
+    };
+  }
+  if (/rate limit|too many/i.test(raw)) {
+    return { message: "That's a lot of emails. Give it a minute and try again.", retryAfter: 60 };
+  }
+  return { message: raw || "Couldn't send the email", retryAfter: 0 };
 }
 
 type FieldErrors = {
@@ -164,7 +194,9 @@ function AuthPage() {
 
   useEffect(() => {
     const remembered = recallSent();
-    if (remembered) setSent(remembered);
+    if (!remembered) return;
+    setSent(remembered.sent);
+    setCooldown(remembered.cooldown);
   }, []);
 
   // A Back that changes the screen should drop the "we sent it" state with it,
@@ -202,6 +234,12 @@ function AuthPage() {
     const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [cooldown]);
+
+  /** Starts the resend wait and records it, so a reload can't re-arm the button. */
+  function startCooldown(next: Sent, seconds = COOLDOWN_SECONDS) {
+    setCooldown(seconds);
+    rememberSent(next, Date.now() + seconds * 1000);
+  }
 
   /** Switching screens is a navigation, so Back returns to the previous one. */
   function goTo(next: Screen) {
@@ -327,9 +365,9 @@ function AuthPage() {
         setBusy(false);
         return;
       }
-      setCooldown(30);
-      setSent({ kind: "confirm", email: parsed.data });
-      rememberSent({ kind: "confirm", email: parsed.data });
+      const next: Sent = { kind: "confirm", email: parsed.data };
+      setSent(next);
+      startCooldown(next);
       setBusy(false);
     } catch (err) {
       setErrors({ form: err instanceof Error ? err.message : "Couldn't create your account" });
@@ -348,11 +386,13 @@ function AuthPage() {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) throw error;
-      setCooldown(30);
-      setSent({ kind: "reset", email: address });
-      rememberSent({ kind: "reset", email: address });
+      const next: Sent = { kind: "reset", email: address };
+      setSent(next);
+      startCooldown(next);
     } catch (err) {
-      setErrors({ form: err instanceof Error ? err.message : "Couldn't send the email" });
+      const { message, retryAfter } = describeSendError(err);
+      setErrors({ form: message });
+      if (retryAfter > 0) setCooldown(retryAfter);
     } finally {
       setBusy(false);
     }
@@ -368,10 +408,13 @@ function AuthPage() {
         options: { emailRedirectTo: `${window.location.origin}/auth` },
       });
       if (error) throw error;
-      setCooldown(30);
+      if (sent) startCooldown(sent);
+      else setCooldown(COOLDOWN_SECONDS);
       toast.success("Confirmation email sent again");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't resend the email");
+      const { message, retryAfter } = describeSendError(err);
+      toast.error(message);
+      if (retryAfter > 0) setCooldown(retryAfter);
     }
   }
 
@@ -382,10 +425,13 @@ function AuthPage() {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) throw error;
-      setCooldown(30);
+      if (sent) startCooldown(sent);
+      else setCooldown(COOLDOWN_SECONDS);
       toast.success("Reset email sent again");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't resend the email");
+      const { message, retryAfter } = describeSendError(err);
+      toast.error(message);
+      if (retryAfter > 0) setCooldown(retryAfter);
     }
   }
 
