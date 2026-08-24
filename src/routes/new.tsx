@@ -381,122 +381,12 @@ function NewProject() {
 
       <div className="mt-8 flex-1">
         {step === 0 && (
-          <section>
-            <h1 className="text-2xl font-black tracking-tight">I'm organizing a:</h1>
-            <div className="mt-5 space-y-3">
-              {TEMPLATES.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => {
-                    setTemplateId(t.id);
-                    setConstraints({ ...t.defaults, days: [...t.defaults.days] });
-                  }}
-                  className={cn(
-                    "grid w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-4 rounded-2xl border-2 p-4 text-left",
-                    templateId === t.id ? "border-primary bg-primary/10" : "border-border bg-card",
-                  )}
-                >
-                  <span className="text-2xl" aria-hidden>
-                    {t.emoji}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block truncate text-base font-bold">{t.label}</span>
-                    <span className="block truncate text-xs text-muted-foreground">
-                      {t.windowLabel}
-                    </span>
-                  </span>
-                </button>
-              ))}
-            </div>
-
-            {template && (
-              <div className="mt-6 space-y-5 rounded-2xl border-2 border-border bg-card p-4">
-                <div>
-                  <p className="text-sm font-bold">Which days work?</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {describeDays(constraints.days)}
-                  </p>
-                  <div className="mt-3 flex gap-1.5">
-                    {DAY_LABELS.map((label, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        aria-pressed={constraints.days.includes(i)}
-                        onClick={() => toggleDay(i)}
-                        className={cn(
-                          "h-11 flex-1 rounded-xl border-2 text-sm font-bold",
-                          constraints.days.includes(i)
-                            ? "border-primary bg-primary/15 text-foreground"
-                            : "border-border text-muted-foreground",
-                        )}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {constraints.fullDay ? (
-                  <p className="text-xs text-muted-foreground">
-                    Full days — everyone needs all selected days free. Add Friday or Monday for a
-                    long weekend.
-                  </p>
-                ) : (
-                  <>
-                    <div>
-                      <div className="flex items-baseline justify-between">
-                        <p className="text-sm font-bold">How long?</p>
-                        <p className="text-sm font-medium text-muted-foreground">
-                          {formatDuration(constraints.durationMinutes)}
-                        </p>
-                      </div>
-                      <Slider
-                        min={0}
-                        max={480}
-                        step={30}
-                        value={[constraints.durationMinutes ?? 0]}
-                        onValueChange={([v]) => patch({ durationMinutes: !v ? null : v })}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Slide all the way left for “any length”.
-                      </p>
-                    </div>
-
-                    <div>
-                      <div className="flex items-baseline justify-between">
-                        <p className="text-sm font-bold">Time of day</p>
-                        <p className="text-sm font-medium text-muted-foreground">
-                          {formatHour(constraints.startAfter)} – {formatHour(constraints.endBy)}
-                        </p>
-                      </div>
-                      <Slider
-                        min={0}
-                        max={24}
-                        step={0.5}
-                        minStepsBetweenThumbs={1}
-                        value={[constraints.startAfter, constraints.endBy]}
-                        onValueChange={([a, b]) => patch({ startAfter: a ?? 0, endBy: b ?? 24 })}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Starts after {formatHour(constraints.startAfter)} · ends by{" "}
-                        {formatHour(constraints.endBy)}
-                      </p>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-          </section>
-        )}
-
-        {step === 1 && (
-          <section className="space-y-6">
+          <section className="space-y-7">
             <div>
-              <h1 className="text-2xl font-black tracking-tight">Name it</h1>
+              <h1 className="text-2xl font-black tracking-tight">I'm organizing a:</h1>
               <Input
                 className="mt-4 h-14 text-base"
-                placeholder="Session 12"
+                placeholder="Brunch, Dinner, Weekend trip…"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
@@ -548,75 +438,173 @@ function NewProject() {
                 </div>
               </div>
             )}
-          </section>
-        )}
 
-        {step === 2 && (
-          <section>
-            <h1 className="text-2xl font-black tracking-tight">When are we looking?</h1>
-            <div className="mt-4 grid grid-cols-2 gap-2 rounded-2xl bg-secondary p-1">
-              {(["rolling", "custom"] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setWindowMode(m)}
-                  className={cn(
-                    "h-12 rounded-xl text-sm font-bold capitalize",
-                    windowMode === m ? "bg-primary text-primary-foreground" : "text-foreground",
-                  )}
-                >
-                  {m}
-                </button>
-              ))}
+            <div className="space-y-5 rounded-2xl border-2 border-border bg-card p-4">
+              <div>
+                <p className="text-sm font-bold">Which days work?</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {describeDays(constraints.days)}
+                </p>
+                <div className="mt-3 flex gap-1.5">
+                  {DAY_LABELS.map((label, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      aria-pressed={constraints.days.includes(i)}
+                      onClick={() => toggleDay(i)}
+                      className={cn(
+                        "h-11 flex-1 rounded-xl border-2 text-sm font-bold",
+                        constraints.days.includes(i)
+                          ? "border-primary bg-primary/15 text-foreground"
+                          : "border-border text-muted-foreground",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {constraints.fullDay ? (
+                <p className="text-xs text-muted-foreground">
+                  Full days — everyone needs all selected days free. Add Friday or Monday for a long
+                  weekend.
+                </p>
+              ) : (
+                <>
+                  <div>
+                    <div className="flex items-baseline justify-between">
+                      <p className="text-sm font-bold">Duration</p>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {formatDuration(constraints.durationMinutes)}
+                      </p>
+                    </div>
+                    <Slider
+                      min={0}
+                      max={480}
+                      step={30}
+                      value={[constraints.durationMinutes ?? 0]}
+                      onValueChange={([v]) => patch({ durationMinutes: !v ? null : v })}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Slide all the way left for “any length”.
+                    </p>
+                  </div>
+
+                  <div>
+                    <div className="flex items-baseline justify-between">
+                      <p className="text-sm font-bold">Time of day</p>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {formatHour(constraints.startAfter)} – {formatHour(constraints.endBy)}
+                      </p>
+                    </div>
+                    <Slider
+                      min={0}
+                      max={24}
+                      step={0.5}
+                      minStepsBetweenThumbs={1}
+                      value={[constraints.startAfter, constraints.endBy]}
+                      onValueChange={([a, b]) => patch({ startAfter: a ?? 0, endBy: b ?? 24 })}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Starts after {formatHour(constraints.startAfter)} · ends by{" "}
+                      {formatHour(constraints.endBy)}
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
 
-            {windowMode === "rolling" ? (
-              <div className="mt-5 space-y-2">
-                {[2, 4, 6].map((w) => (
+            <div>
+              <h2 className="text-lg font-black tracking-tight">When are we looking?</h2>
+
+              <div className="mt-4 space-y-3">
+                <div
+                  className={cn(
+                    "rounded-2xl border-2 p-4",
+                    windowMode === "rolling" ? "border-primary bg-primary/10" : "border-border",
+                  )}
+                >
                   <button
-                    key={w}
                     type="button"
-                    onClick={() => setRollingWeeks(w)}
-                    className={cn(
-                      "flex h-14 w-full items-center justify-between rounded-2xl border-2 px-4 text-base font-bold",
-                      rollingWeeks === w ? "border-primary bg-primary/10" : "border-border",
-                    )}
+                    onClick={() => setWindowMode("rolling")}
+                    className="flex min-h-11 w-full items-center justify-between text-left text-base font-bold"
                   >
-                    Next {w} weeks
+                    Rolling
                     <span className="text-xs font-medium text-muted-foreground">
                       auto-rolls from today
                     </span>
                   </button>
-                ))}
-              </div>
-            ) : (
-              <div className="mt-5 rounded-2xl border border-border p-2">
-                <Calendar
-                  mode="range"
-                  numberOfMonths={1}
-                  selected={range}
-                  onSelect={setRange}
-                  disabled={{ before: new Date() }}
-                  className="pointer-events-auto w-full"
-                />
-                <p className="px-2 pb-2 text-xs text-muted-foreground">
-                  Tap a start date, then an end date.
-                </p>
-              </div>
-            )}
+                  {windowMode === "rolling" && (
+                    <div className="mt-3 flex items-center gap-3">
+                      <span className="text-sm text-muted-foreground">Over the next</span>
+                      <Select
+                        value={String(rollingWeeks)}
+                        onValueChange={(v) => setRollingWeeks(Number(v))}
+                      >
+                        <SelectTrigger className="h-12 w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[1, 2, 3, 4, 6, 8, 12].map((w) => (
+                            <SelectItem key={w} value={String(w)}>
+                              {w} {w === 1 ? "week" : "weeks"}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
 
-            {generation && (
-              <p className="mt-3 text-xs text-muted-foreground">
-                {generation.slots.length} time options
-                {generation.widened
-                  ? ` — spaced ${generation.stepHours}h apart to stay under the cap.`
-                  : generation.truncated
-                    ? ` — capped at ${MAX_SLOTS}.`
-                    : ""}
-              </p>
-            )}
+                <div
+                  className={cn(
+                    "rounded-2xl border-2 p-4",
+                    windowMode === "custom" ? "border-primary bg-primary/10" : "border-border",
+                  )}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setWindowMode("custom")}
+                    className="flex min-h-11 w-full items-center justify-between text-left text-base font-bold"
+                  >
+                    Custom
+                    <span className="text-xs font-medium text-muted-foreground">
+                      pick a date range
+                    </span>
+                  </button>
+                  {windowMode === "custom" && (
+                    <div className="mt-3 rounded-2xl border border-border bg-background p-2">
+                      <Calendar
+                        mode="range"
+                        numberOfMonths={1}
+                        selected={range}
+                        onSelect={setRange}
+                        disabled={{ before: new Date() }}
+                        className="pointer-events-auto w-full"
+                      />
+                      <p className="px-2 pb-2 text-xs text-muted-foreground">
+                        Tap a start date, then an end date.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {generation && (
+                <p className="mt-3 text-xs text-muted-foreground">
+                  {generation.slots.length} time options
+                  {generation.widened
+                    ? ` — spaced ${generation.stepHours}h apart to stay under the cap.`
+                    : generation.truncated
+                      ? ` — capped at ${MAX_SLOTS}.`
+                      : ""}
+                </p>
+              )}
+            </div>
           </section>
         )}
+
 
         {step === 3 && (
           <section>
