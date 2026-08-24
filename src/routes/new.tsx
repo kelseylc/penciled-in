@@ -713,6 +713,25 @@ function NewProject() {
               ))}
             </ul>
 
+            <TimezonePicker
+              open={tzTarget !== null}
+              onOpenChange={(o) => !o && setTzTarget(null)}
+              fallback={tz}
+              personName={people.find((x) => x.key === tzTarget)?.display_name}
+              value={people.find((x) => x.key === tzTarget)?.timezone ?? null}
+              onSelect={(zone) =>
+                setPeople((list) =>
+                  list.map((x) => (x.key === tzTarget ? { ...x, timezone: zone } : x)),
+                )
+              }
+              onClear={() =>
+                setPeople((list) =>
+                  list.map((x) => (x.key === tzTarget ? { ...x, timezone: null } : x)),
+                )
+              }
+            />
+
+
             {!groupId && people.length > 1 && (
               <div className="mt-5 rounded-2xl border border-border p-4">
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
