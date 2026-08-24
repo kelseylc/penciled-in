@@ -1,5 +1,14 @@
 import { Link, useRouter, useRouterState } from "@tanstack/react-router";
-import { ArrowLeft, CalendarCheck, CalendarPlus, LogIn, LogOut, Menu, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarCheck,
+  CalendarPlus,
+  Clock,
+  LogIn,
+  LogOut,
+  Menu,
+  Users,
+} from "lucide-react";
 
 import {
   DropdownMenu,
@@ -84,6 +93,14 @@ export function AppBar({ back = true, title }: Props) {
               <Users className="mr-2 size-4" aria-hidden /> My groups
             </Link>
           </DropdownMenuItem>
+          {session && (
+            <DropdownMenuItem asChild>
+              <Link to="/availability" className="cursor-pointer">
+                <Clock className="mr-2 size-4" aria-hidden /> My usual availability
+              </Link>
+            </DropdownMenuItem>
+          )}
+
           <DropdownMenuSeparator />
           {session ? (
             <DropdownMenuItem

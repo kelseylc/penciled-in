@@ -1,6 +1,8 @@
 import { addDays, addMonths, format } from "date-fns";
 import { fromZonedTime, toZonedTime } from "date-fns-tz";
 
+import { patternCoversSlot, type WeeklyPattern } from "./weekly-availability";
+
 export type SlotState = "yes" | "maybe" | "no";
 export type Cadence = "weekly" | "biweekly" | "monthly" | "quarterly";
 
@@ -8,11 +10,14 @@ export interface SolverParticipant {
   id: string;
   display_name: string;
   is_required: boolean;
-  /** Weekly availability pattern: weekday index -> ["morning","afternoon","evening"]. */
-  weekly_pattern?: Record<string, string[]> | null;
+  /** Standing weekly availability, evaluated in the person's own timezone. */
+  weekly_pattern?: WeeklyPattern | null;
+  /** IANA zone the pattern is read in. Falls back to the project timezone. */
+  timezone?: string | null;
   /** ISO yyyy-MM-dd dates the person is never available. */
   blackout_dates?: string[] | null;
 }
+
 
 export interface SolverSlot {
   id: string;
@@ -176,7 +181,12 @@ export interface CadenceOption {
   /** Projected occurrence start times (UTC ISO). */
   occurrences: string[];
   metCount: number;
+  /** Of metCount, how many rested only on real answers. */
+  metConfirmedCount: number;
+  /** Of metCount, how many needed a pattern-projected answer to get there. */
+  metProjectedCount: number;
   totalCount: number;
+
   /** Participants who are never available across the projection. */
   neverAvailable: string[];
   /** Participants who miss at least one projected occurrence. */
@@ -199,13 +209,23 @@ function advance(date: Date, cadence: Cadence): Date {
   return addMonths(date, 3);
 }
 
-function stateFromDefaults(p: SolverParticipant, localDate: Date): SlotState | undefined {
+function stateFromDefaults(
+  p: SolverParticipant,
+  localDate: Date,
+  utcIso: string,
+  fallbackTimezone: string,
+): SlotState | undefined {
   const iso = format(localDate, "yyyy-MM-dd");
   if (p.blackout_dates?.includes(iso)) return "no";
-  const pattern = p.weekly_pattern?.[String(localDate.getDay())];
-  if (!pattern || pattern.length === 0) return undefined;
-  return pattern.includes(daypartOfHour(localDate.getHours())) ? "yes" : "no";
+  const covered = patternCoversSlot(
+    p.weekly_pattern,
+    p.timezone || fallbackTimezone,
+    utcIso,
+  );
+  // No standing signal is unknown, never an implied no.
+  return covered ?? undefined;
 }
+
 
 /**
  * Enumerate every (weekday, start time) pair supported by the candidate slots,
@@ -282,6 +302,7 @@ export function enumerateCadences(
 
     const occurrences: string[] = [];
     let metCount = 0;
+    let metConfirmedCount = 0;
     const missedBy = new Map<string, number>();
     const availableAtLeastOnce = new Set<string>();
 
@@ -293,16 +314,31 @@ export function enumerateCadences(
       let yes = 0;
       let maybe = 0;
       let requiredOk = true;
+      // Same tally, but ignoring standing patterns, so a pattern-based guess
+      // never poses as a real answer in the number the organizer trusts.
+      let answeredYes = 0;
+      let answeredMaybe = 0;
+      let answeredRequiredOk = true;
       for (const p of participants) {
+        // An explicit answer always wins over a pattern-projected one.
         const explicit = pairStates.get(day)?.get(p.id);
-        const state = explicit ?? stateFromDefaults(p, cursor) ?? usual.get(p.id) ?? undefined;
+        const answered = explicit ?? usual.get(p.id);
+        const state =
+          explicit ?? stateFromDefaults(p, cursor, utc.toISOString(), timezone) ?? answered;
         if (state === "yes") yes += 1;
         else if (state === "maybe") maybe += 1;
+        if (answered === "yes") answeredYes += 1;
+        else if (answered === "maybe") answeredMaybe += 1;
+        if (p.is_required && answered !== "yes" && answered !== "maybe") answeredRequiredOk = false;
         if (state === "yes" || state === "maybe") availableAtLeastOnce.add(p.id);
         else missedBy.set(p.id, (missedBy.get(p.id) ?? 0) + 1);
         if (p.is_required && state !== "yes" && state !== "maybe") requiredOk = false;
       }
-      if (requiredOk && yes + maybe >= quorumMin) metCount += 1;
+      if (requiredOk && yes + maybe >= quorumMin) {
+        metCount += 1;
+        if (answeredRequiredOk && answeredYes + answeredMaybe >= quorumMin) metConfirmedCount += 1;
+      }
+
 
       cursor = advance(cursor, cadence);
       cursor.setHours(Number(pair.startTime.slice(0, 2)), Number(pair.startTime.slice(3, 5)), 0, 0);
@@ -320,14 +356,18 @@ export function enumerateCadences(
       durationMinutes,
     )}`;
 
+    const metProjectedCount = metCount - metConfirmedCount;
+    const projectedNote =
+      metProjectedCount > 0 ? ` (${metProjectedCount} projected from usual schedules)` : "";
+
     const tradeoff =
       neverAvailable.length > 0
-        ? `${metCount} of ${total}, but never with ${listNames(neverAvailable)}`
+        ? `${metCount} of ${total}${projectedNote}, but never with ${listNames(neverAvailable)}`
         : sometimesMissing.length > 0
-          ? `${metCount} of ${total} — ${listNames(sometimesMissing)} ${
+          ? `${metCount} of ${total}${projectedNote} — ${listNames(sometimesMissing)} ${
               sometimesMissing.length === 1 ? "misses" : "miss"
             } some sessions`
-          : `${metCount} of ${total}, everyone can make all of them`;
+          : `${metCount} of ${total}${projectedNote}, everyone can make all of them`;
 
     options.push({
       weekday: pair.weekday,
@@ -335,7 +375,10 @@ export function enumerateCadences(
       durationMinutes,
       occurrences,
       metCount,
+      metConfirmedCount,
+      metProjectedCount,
       totalCount: total,
+
       neverAvailable,
       sometimesMissing,
       label,
@@ -346,6 +389,10 @@ export function enumerateCadences(
 
   return options.sort((a, b) => {
     if (b.metCount !== a.metCount) return b.metCount - a.metCount;
+    // Real answers beat projections when the totals tie.
+    if (b.metConfirmedCount !== a.metConfirmedCount)
+      return b.metConfirmedCount - a.metConfirmedCount;
+
     if (a.neverAvailable.length !== b.neverAvailable.length)
       return a.neverAvailable.length - b.neverAvailable.length;
     if (a.sometimesMissing.length !== b.sometimesMissing.length)

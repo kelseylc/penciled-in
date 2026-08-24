@@ -111,9 +111,17 @@ export function AccountUpsellCard({
         <div className="mt-4 space-y-3">
           <p className="text-sm font-semibold">You're all set</p>
           <p className="text-sm text-muted-foreground">
-            Your answers are saved to this account. Next time we'll fill them in for you.
+            Your answers are saved to this account. Set your usual weekly availability once and
+            we'll pre-fill every plan from it.
           </p>
+          <Link
+            to="/availability"
+            className="flex h-12 w-full items-center justify-center rounded-xl bg-primary text-base font-bold text-primary-foreground"
+          >
+            Set my usual availability
+          </Link>
         </div>
+
       ) : existingAccount ? (
         <div className="mt-4 space-y-3">
           <p className="text-sm font-semibold">You already have an account</p>

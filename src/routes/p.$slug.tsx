@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -21,7 +21,9 @@ import {
   submitResponses,
   type RespondBundle,
 } from "@/lib/respond.functions";
-import { daypartOf, summarizeAnswers, type SlotState } from "@/lib/summary";
+import { summarizeAnswers, type SlotState } from "@/lib/summary";
+import { patternCoversSlot } from "@/lib/weekly-availability";
+
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/p/$slug")({
@@ -85,6 +87,9 @@ function RespondPage() {
   const [name, setName] = useState("");
   const [answers, setAnswers] = useState<Record<string, SlotState>>({});
   const [prefilled, setPrefilled] = useState(false);
+  /** Slots filled in from the saved pattern rather than actually answered. */
+  const [predicted, setPredicted] = useState<Set<string>>(() => new Set());
+
   const [bannerOpen, setBannerOpen] = useState(true);
   const [changingTz, setChangingTz] = useState(false);
   const [welcomeBack, setWelcomeBack] = useState(false);
@@ -121,28 +126,39 @@ function RespondPage() {
     setScreen((s) => (s === "who" ? "grid" : s));
   }, [bundle?.me]);
 
-  // Pre-fill from saved default availability when there is no answer yet.
+  // Pre-fill from saved standing availability when there is no answer yet.
+  // A slot the pattern says nothing about stays unknown — never an implied no.
   useEffect(() => {
     const defaults = bundle?.me?.defaults;
     if (!bundle || !defaults) return;
     if (bundle.me!.responses.length > 0) return;
+    const zone = bundle.me!.timezone || timezone;
     setAnswers((current) => {
       if (Object.keys(current).length > 0) return current;
       const next: Record<string, SlotState> = {};
+      const guessed = new Set<string>();
       for (const slot of bundle.slots) {
-        const local = toZonedTime(new Date(slot.start_utc), timezone);
-        const day = String(local.getDay());
+        const local = toZonedTime(new Date(slot.start_utc), zone);
         const dateISO = format(local, "yyyy-MM-dd");
         if (defaults.blackout_dates.includes(dateISO)) {
           next[slot.id] = "no";
-        } else if (defaults.weekly_pattern[day]?.includes(daypartOf(local.getHours()))) {
-          next[slot.id] = "yes";
+          guessed.add(slot.id);
+          continue;
+        }
+        const covered = patternCoversSlot(defaults.weekly_pattern, zone, slot.start_utc);
+        if (covered) {
+          next[slot.id] = covered;
+          guessed.add(slot.id);
         }
       }
-      if (Object.keys(next).length > 0) setPrefilled(true);
+      if (guessed.size > 0) {
+        setPrefilled(true);
+        setPredicted(guessed);
+      }
       return next;
     });
   }, [bundle, timezone]);
+
 
   const grouped = useMemo(() => {
     if (!bundle) return [];
@@ -210,6 +226,13 @@ function RespondPage() {
   });
 
   function cycle(id: string) {
+    // Tapping a predicted answer makes it a real one.
+    setPredicted((current) => {
+      if (!current.has(id)) return current;
+      const copy = new Set(current);
+      copy.delete(id);
+      return copy;
+    });
     setAnswers((current) => {
       const next = NEXT[current[id] ?? "unknown"];
       const copy = { ...current };
@@ -218,6 +241,7 @@ function RespondPage() {
       return copy;
     });
   }
+
 
   function bulkSet(filter: (weekend: boolean) => boolean, state: SlotState | null) {
     if (!bundle) return;
@@ -230,6 +254,8 @@ function RespondPage() {
       }
     }
     setAnswers(next);
+    setPredicted(new Set());
+
   }
 
   if (!tokenReady || (bundleQuery.isLoading && !bundle)) {
@@ -342,9 +368,14 @@ function RespondPage() {
           <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 rounded-2xl bg-accent p-4 text-accent-foreground">
             <p className="min-w-0 text-sm">
               {staleDefaults
-                ? "This is from a while ago — still right? Tap anything to change it."
-                : "Pre-filled from your usual availability — tap anything to change it."}
+                ? "Predicted from your usual schedule — but that was set a while ago. Tap anything to change it."
+                : "Predicted from your usual schedule (dotted outline) — tap anything to confirm or change it."}{" "}
+              <Link to="/availability" className="font-bold underline underline-offset-4">
+                Update your usual availability
+              </Link>
             </p>
+
+
             <button
               type="button"
               aria-label="Dismiss"
@@ -380,12 +411,15 @@ function RespondPage() {
               <div className="mt-2 grid grid-cols-3 gap-2">
                 {day.slots.map((slot) => {
                   const state = answers[slot.id];
+                  const guess = predicted.has(slot.id);
                   const local = toZonedTime(new Date(slot.start_utc), timezone);
                   return (
                     <button
                       key={slot.id}
                       type="button"
-                      aria-label={`${day.label} ${format(local, "h:mm a")} — ${state ?? "not set"}`}
+                      aria-label={`${day.label} ${format(local, "h:mm a")} — ${state ?? "not set"}${
+                        guess ? " (predicted from your usual schedule)" : ""
+                      }`}
                       onClick={() => cycle(slot.id)}
                       className={cn(
                         "h-12 rounded-xl text-sm font-bold transition-colors",
@@ -394,8 +428,10 @@ function RespondPage() {
                         state === "no" &&
                           "border-2 border-muted-foreground/50 text-muted-foreground line-through",
                         !state && "border border-border bg-card",
+                        guess && "border-2 border-dashed border-foreground/60 opacity-80",
                       )}
                     >
+
                       {format(local, "h:mm a").replace(":00", "")}
                     </button>
                   );

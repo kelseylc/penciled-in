@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { parseWeeklyPattern, type WeeklyPattern } from "@/lib/weekly-availability";
 
 export interface ResultsBundle {
   project: {
@@ -20,9 +21,11 @@ export interface ResultsBundle {
     display_name: string;
     is_required: boolean;
     responded: boolean;
-    weekly_pattern: Record<string, string[]> | null;
+    timezone: string | null;
+    weekly_pattern: WeeklyPattern | null;
     blackout_dates: string[] | null;
   }[];
+
   slots: { id: string; start_utc: string; end_utc: string }[];
   /** slotId -> participantId -> state */
   responses: Record<string, Record<string, "yes" | "maybe" | "no">>;
@@ -56,9 +59,10 @@ export const getResults = createServerFn({ method: "POST" })
       await Promise.all([
         sb
           .from("participants")
-          .select("id, display_name, is_required, responded_at, profile_id")
+          .select("id, display_name, is_required, responded_at, profile_id, timezone")
           .eq("project_id", project.id)
           .order("display_name"),
+
         sb
           .from("candidate_slots")
           .select("id, start_utc, end_utc")
@@ -91,14 +95,27 @@ export const getResults = createServerFn({ method: "POST" })
       }
     }
 
-    // Saved default availability, when participants are linked to group members.
+    // Standing availability: account-level first, then the group-member row.
     const defaults = new Map<
       string,
-      { weekly_pattern: Record<string, string[]> | null; blackout_dates: string[] | null }
+      { weekly_pattern: WeeklyPattern | null; blackout_dates: string[] | null }
     >();
     const profileIds = (participants ?? [])
       .map((p) => p.profile_id)
       .filter((v): v is string => !!v);
+    if (profileIds.length > 0) {
+      const { data: mine } = await sb
+        .from("default_availability")
+        .select("profile_id, weekly_pattern, blackout_dates")
+        .in("profile_id", profileIds);
+      for (const da of mine ?? []) {
+        if (!da.profile_id) continue;
+        defaults.set(da.profile_id, {
+          weekly_pattern: parseWeeklyPattern(da.weekly_pattern),
+          blackout_dates: da.blackout_dates ?? null,
+        });
+      }
+    }
     if (project.group_id && profileIds.length > 0) {
       const { data: members } = await sb
         .from("group_members")
@@ -114,8 +131,9 @@ export const getResults = createServerFn({ method: "POST" })
         for (const da of das ?? []) {
           const member = (members ?? []).find((m) => m.id === da.group_member_id);
           if (!member?.profile_id) continue;
+          if (defaults.has(member.profile_id)) continue;
           defaults.set(member.profile_id, {
-            weekly_pattern: (da.weekly_pattern ?? null) as Record<string, string[]> | null,
+            weekly_pattern: parseWeeklyPattern(da.weekly_pattern),
             blackout_dates: da.blackout_dates ?? null,
           });
         }
@@ -129,11 +147,13 @@ export const getResults = createServerFn({ method: "POST" })
         display_name: p.display_name,
         is_required: p.is_required,
         responded: !!p.responded_at,
+        timezone: p.timezone ?? null,
         weekly_pattern: p.profile_id ? (defaults.get(p.profile_id)?.weekly_pattern ?? null) : null,
         blackout_dates: p.profile_id ? (defaults.get(p.profile_id)?.blackout_dates ?? null) : null,
       })),
       slots: slots ?? [],
       responses,
+
       previousOccurrenceUtc: occ?.[0]?.scheduled_start_utc ?? null,
       decision: decision ?? null,
     };
