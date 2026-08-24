@@ -75,10 +75,10 @@ function isRange(value: unknown): value is AvailabilityRange {
   if (!value || typeof value !== "object") return false;
   const r = value as Record<string, unknown>;
   return (
-    typeof r.start === "string" &&
-    typeof r.end === "string" &&
-    /^\d{2}:\d{2}$/.test(r.start) &&
-    /^\d{2}:\d{2}$/.test(r.end)
+    typeof r["start"] === "string" &&
+    typeof r["end"] === "string" &&
+    /^\d{2}:\d{2}$/.test(r["start"]) &&
+    /^\d{2}:\d{2}$/.test(r["end"])
   );
 }
 
@@ -108,13 +108,13 @@ export function parseWeeklyPattern(raw: unknown): WeeklyPattern {
     if (typeof value !== "object") continue;
     const obj = value as Record<string, unknown>;
 
-    if (Array.isArray(obj.ranges) || typeof obj.all_day === "boolean") {
-      const ranges = (Array.isArray(obj.ranges) ? obj.ranges : []).filter(isRange).map((r) => ({
+    if (Array.isArray(obj["ranges"]) || typeof obj["all_day"] === "boolean") {
+      const ranges = (Array.isArray(obj["ranges"]) ? obj["ranges"] : []).filter(isRange).map((r) => ({
         start: r.start,
         end: r.end,
         state: r.state === "maybe" ? ("maybe" as const) : ("yes" as const),
       }));
-      const day = normalizeDay({ all_day: obj.all_day === true, ranges });
+      const day = normalizeDay({ all_day: obj["all_day"] === true, ranges });
       if (day.all_day || day.ranges.length > 0) out[key] = day;
       continue;
     }
