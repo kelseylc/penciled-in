@@ -200,7 +200,8 @@ export function SlotReview({
                     <X className="size-4" />
                   </button>
                 </span>
-              ))}
+                );
+              })}
             </div>
           </div>
         ))}
