@@ -1,5 +1,14 @@
 import { Link, useRouter, useRouterState } from "@tanstack/react-router";
-import { ArrowLeft, CalendarCheck, CalendarPlus, LogIn, LogOut, Menu, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarCheck,
+  CalendarPlus,
+  Clock,
+  LogIn,
+  LogOut,
+  Menu,
+  Users,
+} from "lucide-react";
 
 import {
   DropdownMenu,
