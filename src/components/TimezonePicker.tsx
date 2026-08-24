@@ -24,9 +24,9 @@ export function TimezonePicker({
   onOpenChange: (open: boolean) => void;
   value: string | null;
   fallback: string;
-  personName?: string;
+  personName?: string | undefined;
   onSelect: (zone: string) => void;
-  onClear?: () => void;
+  onClear?: (() => void) | undefined;
 }) {
   const [query, setQuery] = useState("");
   const zones = useMemo(() => searchZones(query, fallback), [query, fallback]);
