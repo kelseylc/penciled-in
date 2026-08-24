@@ -16,7 +16,7 @@ const pattern: WeeklyPattern = {
 describe("patternCoversSlot", () => {
   it("returns the range state for a slot starting inside a window", () => {
     // Tue 2026-09-08 22:00 UTC = 18:00 New York
-    expect(patternCoversSlot(pattern, "America/New_York", "2026-09-09T22:00:00Z")).toBe("yes");
+    expect(patternCoversSlot(pattern, "America/New_York", "2026-09-08T22:00:00Z")).toBe("yes");
   });
 
   it("returns maybe when the matching range is a maybe", () => {
@@ -30,17 +30,17 @@ describe("patternCoversSlot", () => {
 
   it("returns null outside any range, never no", () => {
     // Tue 14:00 New York, outside 17:00-23:00
-    expect(patternCoversSlot(pattern, "America/New_York", "2026-09-09T18:00:00Z")).toBeNull();
+    expect(patternCoversSlot(pattern, "America/New_York", "2026-09-08T18:00:00Z")).toBeNull();
   });
 
   it("returns null for a weekday with no entry", () => {
-    expect(patternCoversSlot(pattern, "America/New_York", "2026-09-10T22:00:00Z")).toBeNull();
+    expect(patternCoversSlot(pattern, "America/New_York", "2026-09-09T22:00:00Z")).toBeNull();
   });
 
   it("evaluates in the participant's timezone, not UTC", () => {
-    // 2026-09-10T01:00Z is Wednesday in UTC but Tuesday 21:00 in New York
-    expect(patternCoversSlot(pattern, "America/New_York", "2026-09-10T01:00:00Z")).toBe("yes");
-    expect(patternCoversSlot(pattern, "Europe/London", "2026-09-10T01:00:00Z")).toBeNull();
+    // 2026-09-09T01:00Z is Wednesday in UTC but Tuesday 21:00 in New York
+    expect(patternCoversSlot(pattern, "America/New_York", "2026-09-09T01:00:00Z")).toBe("yes");
+    expect(patternCoversSlot(pattern, "Europe/London", "2026-09-09T01:00:00Z")).toBeNull();
   });
 });
 
