@@ -1,6 +1,8 @@
 import { addDays, addMonths, format } from "date-fns";
 import { fromZonedTime, toZonedTime } from "date-fns-tz";
 
+import { patternCoversSlot, type WeeklyPattern } from "./weekly-availability";
+
 export type SlotState = "yes" | "maybe" | "no";
 export type Cadence = "weekly" | "biweekly" | "monthly" | "quarterly";
 
@@ -8,11 +10,14 @@ export interface SolverParticipant {
   id: string;
   display_name: string;
   is_required: boolean;
-  /** Weekly availability pattern: weekday index -> ["morning","afternoon","evening"]. */
-  weekly_pattern?: Record<string, string[]> | null;
+  /** Standing weekly availability, evaluated in the person's own timezone. */
+  weekly_pattern?: WeeklyPattern | null;
+  /** IANA zone the pattern is read in. Falls back to the project timezone. */
+  timezone?: string | null;
   /** ISO yyyy-MM-dd dates the person is never available. */
   blackout_dates?: string[] | null;
 }
+
 
 export interface SolverSlot {
   id: string;
