@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { RequireAuth } from "@/components/RequireAuth";
+import { TimezonePicker } from "@/components/TimezonePicker";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { takeDraft } from "@/lib/plan-draft";
@@ -37,6 +38,7 @@ import {
   type EventConstraints,
   type TemplateId,
 } from "@/lib/templates";
+import { zoneLabel } from "@/lib/timezones";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/new")({
@@ -109,6 +111,7 @@ function NewProject() {
   const [groupId, setGroupId] = useState<string | null>(null);
   const [people, setPeople] = useState<Person[]>([]);
   const [newName, setNewName] = useState("");
+  const [tzTarget, setTzTarget] = useState<string | null>(null);
   const [saveAsGroup, setSaveAsGroup] = useState(false);
   const [saveGroupName, setSaveGroupName] = useState("");
   const [quorum, setQuorum] = useState(2);
