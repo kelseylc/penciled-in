@@ -254,6 +254,8 @@ function RespondPage() {
       }
     }
     setAnswers(next);
+    setPredicted(new Set());
+
   }
 
   if (!tokenReady || (bundleQuery.isLoading && !bundle)) {
