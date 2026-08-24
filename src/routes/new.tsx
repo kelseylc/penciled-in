@@ -438,6 +438,28 @@ function NewProject() {
             )}
 
             <div className="space-y-5 rounded-2xl border-2 border-border bg-card p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <Label htmlFor="all-day" className="text-sm font-bold">
+                    All day
+                  </Label>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Whole days, no times — great for weekends away.
+                  </p>
+                </div>
+                <Switch
+                  id="all-day"
+                  checked={!!constraints.fullDay}
+                  onCheckedChange={(on) =>
+                    patch(
+                      on
+                        ? { fullDay: true, durationMinutes: null, startAfter: 0, endBy: 24 }
+                        : { fullDay: false, durationMinutes: 120, startAfter: 9, endBy: 24 },
+                    )
+                  }
+                />
+              </div>
+
               <div>
                 <p className="text-sm font-bold">Which days work?</p>
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -465,10 +487,11 @@ function NewProject() {
 
               {constraints.fullDay ? (
                 <p className="text-xs text-muted-foreground">
-                  Full days — everyone needs all selected days free. Add Friday or Monday for a long
-                  weekend.
+                  Each option covers a full run of your selected days — Sat + Sun becomes one
+                  weekend. Add Friday or Monday for a long weekend.
                 </p>
               ) : (
+
                 <>
                   <div>
                     <div className="flex items-baseline justify-between">
