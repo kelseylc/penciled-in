@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { parseWeeklyPattern, type WeeklyPattern } from "@/lib/weekly-availability";
 
 export interface ResultsBundle {
   project: {
@@ -20,9 +21,11 @@ export interface ResultsBundle {
     display_name: string;
     is_required: boolean;
     responded: boolean;
-    weekly_pattern: Record<string, string[]> | null;
+    timezone: string | null;
+    weekly_pattern: WeeklyPattern | null;
     blackout_dates: string[] | null;
   }[];
+
   slots: { id: string; start_utc: string; end_utc: string }[];
   /** slotId -> participantId -> state */
   responses: Record<string, Record<string, "yes" | "maybe" | "no">>;
