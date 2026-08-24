@@ -21,7 +21,9 @@ import {
   submitResponses,
   type RespondBundle,
 } from "@/lib/respond.functions";
-import { daypartOf, summarizeAnswers, type SlotState } from "@/lib/summary";
+import { summarizeAnswers, type SlotState } from "@/lib/summary";
+import { patternCoversSlot } from "@/lib/weekly-availability";
+
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/p/$slug")({
