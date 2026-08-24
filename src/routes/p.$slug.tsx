@@ -121,28 +121,39 @@ function RespondPage() {
     setScreen((s) => (s === "who" ? "grid" : s));
   }, [bundle?.me]);
 
-  // Pre-fill from saved default availability when there is no answer yet.
+  // Pre-fill from saved standing availability when there is no answer yet.
+  // A slot the pattern says nothing about stays unknown — never an implied no.
   useEffect(() => {
     const defaults = bundle?.me?.defaults;
     if (!bundle || !defaults) return;
     if (bundle.me!.responses.length > 0) return;
+    const zone = bundle.me!.timezone || timezone;
     setAnswers((current) => {
       if (Object.keys(current).length > 0) return current;
       const next: Record<string, SlotState> = {};
+      const guessed = new Set<string>();
       for (const slot of bundle.slots) {
-        const local = toZonedTime(new Date(slot.start_utc), timezone);
-        const day = String(local.getDay());
+        const local = toZonedTime(new Date(slot.start_utc), zone);
         const dateISO = format(local, "yyyy-MM-dd");
         if (defaults.blackout_dates.includes(dateISO)) {
           next[slot.id] = "no";
-        } else if (defaults.weekly_pattern[day]?.includes(daypartOf(local.getHours()))) {
-          next[slot.id] = "yes";
+          guessed.add(slot.id);
+          continue;
+        }
+        const covered = patternCoversSlot(defaults.weekly_pattern, zone, slot.start_utc);
+        if (covered) {
+          next[slot.id] = covered;
+          guessed.add(slot.id);
         }
       }
-      if (Object.keys(next).length > 0) setPrefilled(true);
+      if (guessed.size > 0) {
+        setPrefilled(true);
+        setPredicted(guessed);
+      }
       return next;
     });
   }, [bundle, timezone]);
+
 
   const grouped = useMemo(() => {
     if (!bundle) return [];
