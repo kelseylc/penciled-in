@@ -59,9 +59,10 @@ export const getResults = createServerFn({ method: "POST" })
       await Promise.all([
         sb
           .from("participants")
-          .select("id, display_name, is_required, responded_at, profile_id")
+          .select("id, display_name, is_required, responded_at, profile_id, timezone")
           .eq("project_id", project.id)
           .order("display_name"),
+
         sb
           .from("candidate_slots")
           .select("id, start_utc, end_utc")
