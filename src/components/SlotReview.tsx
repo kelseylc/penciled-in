@@ -172,14 +172,25 @@ export function SlotReview({
               </button>
             </div>
             <div className="mt-1 flex flex-wrap gap-2">
-              {daySlots.map((slot) => (
+              {daySlots.map((slot) => {
+                const spanHours =
+                  (parseISO(slot.end_utc).getTime() - parseISO(slot.start_utc).getTime()) / 3_600_000;
+                const allDay = spanHours >= 20;
+                const endDay = format(toZonedTime(parseISO(slot.end_utc), timezone), "EEE d MMM");
+                const startDay = format(parseISO(`${dayKey}T00:00:00`), "EEE d MMM");
+                return (
                 <span
                   key={slot.start_utc}
                   className={cn(
                     "flex items-center gap-1 rounded-full border-2 border-border bg-secondary py-1 pl-3 pr-1 text-sm font-bold",
                   )}
                 >
-                  {localTime(slot.start_utc, timezone)}–{localTime(slot.end_utc, timezone)}
+                  {allDay
+                    ? startDay === endDay
+                      ? "All day"
+                      : `All day → ${endDay}`
+                    : `${localTime(slot.start_utc, timezone)}–${localTime(slot.end_utc, timezone)}`}
+
                   <button
                     type="button"
                     aria-label={`Remove ${format(parseISO(`${dayKey}T00:00:00`), "EEE d MMM")} ${localTime(slot.start_utc, timezone)}`}
