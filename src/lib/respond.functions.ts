@@ -35,11 +35,12 @@ export interface RespondBundle {
     responded: boolean;
     responses: { candidate_slot_id: string; state: "yes" | "maybe" | "no" }[];
     defaults: {
-      weekly_pattern: Record<string, string[]>;
+      weekly_pattern: WeeklyPattern;
       blackout_dates: string[];
       updated_at: string;
     } | null;
   } | null;
+
 }
 
 export const getRespondBundle = createServerFn({ method: "POST" })

@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AvailabilityRouteImport } from './routes/availability'
 import { Route as GroupsRouteImport } from './routes/groups'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as NewRouteImport } from './routes/new'
@@ -32,6 +33,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AvailabilityRoute = AvailabilityRouteImport.update({
+  id: '/availability',
+  path: '/availability',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GroupsRoute = GroupsRouteImport.update({
@@ -99,6 +105,7 @@ const ApiPublicHooksNudgeDeadlinesRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/availability': typeof AvailabilityRoute
   '/groups': typeof GroupsRoute
   '/home': typeof HomeRoute
   '/new': typeof NewRoute
@@ -115,6 +122,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/availability': typeof AvailabilityRoute
   '/groups': typeof GroupsRoute
   '/home': typeof HomeRoute
   '/new': typeof NewRoute
@@ -132,6 +140,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/availability': typeof AvailabilityRoute
   '/groups': typeof GroupsRoute
   '/home': typeof HomeRoute
   '/new': typeof NewRoute
@@ -150,6 +159,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/availability'
     | '/groups'
     | '/home'
     | '/new'
@@ -166,6 +176,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/availability'
     | '/groups'
     | '/home'
     | '/new'
@@ -182,6 +193,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/auth'
+    | '/availability'
     | '/groups'
     | '/home'
     | '/new'
@@ -199,6 +211,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
+  AvailabilityRoute: typeof AvailabilityRoute
   GroupsRoute: typeof GroupsRoute
   HomeRoute: typeof HomeRoute
   NewRoute: typeof NewRoute
@@ -227,6 +240,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/availability': {
+      id: '/availability'
+      path: '/availability'
+      fullPath: '/availability'
+      preLoaderRoute: typeof AvailabilityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/groups': {
@@ -319,6 +339,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
+  AvailabilityRoute: AvailabilityRoute,
   GroupsRoute: GroupsRoute,
   HomeRoute: HomeRoute,
   NewRoute: NewRoute,
