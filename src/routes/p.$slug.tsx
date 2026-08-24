@@ -369,8 +369,12 @@ function RespondPage() {
             <p className="min-w-0 text-sm">
               {staleDefaults
                 ? "Predicted from your usual schedule — but that was set a while ago. Tap anything to change it."
-                : "Predicted from your usual schedule (dotted outline) — tap anything to confirm or change it."}
+                : "Predicted from your usual schedule (dotted outline) — tap anything to confirm or change it."}{" "}
+              <Link to="/availability" className="font-bold underline underline-offset-4">
+                Update your usual availability
+              </Link>
             </p>
+
 
             <button
               type="button"
