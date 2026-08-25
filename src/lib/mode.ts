@@ -64,7 +64,7 @@ const CAMPAIGN: ModeCopy = {
   newCta: "New session",
   homeHeader: "Keep your campaign alive.",
   homeSub:
-    "Fixed cadence, a quorum you agreed on, and a rescue poll that already exists the moment a session falls apart.",
+    "Fixed cadence, a quorum you agreed on, and a rescue poll to easily reschedule a session that falls apart.",
   lockedState: "is on",
   atRisk: "The table's short",
   rescue: "Save the session",
