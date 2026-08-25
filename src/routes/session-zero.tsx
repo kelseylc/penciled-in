@@ -534,9 +534,14 @@ function SessionZero() {
               <div>
                 <p className="text-sm font-bold">Auto-lock rescues</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  When a rescue poll clears quorum, lock that time immediately instead of waiting
-                  on the DM.
+                  If a session loses quorum, everyone gets a short poll of nearby times (same
+                  days and hours, within a week of the original). The first time that clears
+                  quorum — required players in, DM in — is locked automatically, and the whole
+                  party gets an email plus a banner with the new date and who's in. Only that one
+                  session moves; the {CADENCE_LABELS[cadence]!.toLowerCase()} cadence stays put.
+                  Turn this off and the DM picks the winning time by hand.
                 </p>
+
               </div>
               <Switch checked={autoLock} onCheckedChange={setAutoLock} aria-label="Auto-lock rescues" />
             </div>
