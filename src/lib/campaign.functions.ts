@@ -13,7 +13,7 @@ const memberSchema = z.object({
 const sessionZeroSchema = z.object({
   campaign_name: z.string().min(1).max(120),
   system: z.string().max(80).nullable(),
-  cadence: z.enum(["weekly", "biweekly", "monthly", "quarterly"]),
+  cadence: z.enum(["weekly", "biweekly", "monthly", "quarterly", "adhoc"]),
   duration_minutes: z.number().int().min(30).max(1440),
   table_rule: z.enum(["play_anyway", "strict_quorum", "everyone"]),
   auto_lock_rescue: z.boolean(),
