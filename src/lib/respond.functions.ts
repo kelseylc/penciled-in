@@ -69,12 +69,47 @@ export const getRespondBundle = createServerFn({ method: "POST" })
     const { data: project } = await supabaseAdmin
       .from("projects")
       .select(
-        "id, name, slug, template, duration_minutes, quorum_min, response_deadline, status, mode, group_id",
+        "id, name, slug, template, duration_minutes, quorum_min, response_deadline, status, mode, group_id, app_mode, is_rescue, repoll_for_occurrence_id",
       )
       .eq("slug", data.slug)
       .maybeSingle();
 
     if (!project) throw new Error("This plan link isn't valid anymore.");
+
+    // A rescue poll has to say what it's rescuing, or the five chips look like
+    // a brand new plan and people answer them like one.
+    let rescue: RespondBundle["rescue"] = null;
+    if (project.is_rescue && project.repoll_for_occurrence_id) {
+      const { data: occ } = await supabaseAdmin
+        .from("occurrences")
+        .select("id, project_id, scheduled_start_utc, session_number")
+        .eq("id", project.repoll_for_occurrence_id)
+        .maybeSingle();
+      if (occ) {
+        const { data: outs } = await supabaseAdmin
+          .from("occurrence_rsvps")
+          .select("participant_id, state")
+          .eq("occurrence_id", occ.id)
+          .eq("state", "out");
+        const outIds = (outs ?? []).map((r) => r.participant_id);
+        let outNames: string[] = [];
+        if (outIds.length > 0) {
+          const { data: people } = await supabaseAdmin
+            .from("participants")
+            .select("display_name")
+            .in("id", outIds);
+          outNames = (people ?? []).map((p) => p.display_name);
+        }
+        rescue = {
+          sessionLabel: occ.session_number
+            ? `Session ${occ.session_number}`
+            : project.name.replace(/^Rescue: /, ""),
+          originalStartUtc: occ.scheduled_start_utc,
+          outNames,
+        };
+      }
+    }
+
 
     const [{ data: slots }, { data: participants }] = await Promise.all([
       supabaseAdmin
