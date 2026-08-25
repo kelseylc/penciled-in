@@ -102,7 +102,13 @@
   --campaign: oklch(0.47 0.2 26);
   --campaign-foreground: oklch(0.99 0.01 85);
   --campaign-muted: oklch(0.95 0.03 25);
+  /* Events mode accent: seafoam teal. */
+  --plans: oklch(0.58 0.11 196);
+  --plans-foreground: oklch(0.99 0.01 196);
+  --plans-muted: oklch(0.93 0.05 190);
+  --plans-accent-foreground: oklch(0.28 0.06 196);
 }
+
 
 .dark {
   --background: oklch(0.129 0.042 264.695);
