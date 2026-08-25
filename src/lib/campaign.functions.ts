@@ -77,15 +77,16 @@ export const createCampaign = createServerFn({ method: "POST" })
     );
     if (mErr) throw new Error(mErr.message);
 
+    const isAdHoc = data.cadence === "adhoc";
     const { data: project, error: pErr } = await supabase
       .from("projects")
       .insert({
-        name: `${data.campaign_name} — cadence`,
+        name: isAdHoc ? data.campaign_name : `${data.campaign_name} — cadence`,
         template: "dnd",
         app_mode: "campaign",
         duration_minutes: data.duration_minutes,
-        mode: "recurring",
-        cadence: data.cadence,
+        mode: isAdHoc ? "one_off" : "recurring",
+        cadence: isAdHoc ? null : data.cadence,
         window_mode: "rolling",
         window_start: data.window_start,
         window_end: data.window_end,
