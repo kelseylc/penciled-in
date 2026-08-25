@@ -176,3 +176,32 @@ export async function nudgeDueProjects(origin: string) {
   }
   return results;
 }
+
+/**
+ * Rescue polls run hot on purpose: a session is on the line, so we chase the
+ * quiet ones at ~4 hours and again at ~24 hours, then stop.
+ */
+export async function nudgeRescuePolls(origin: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const now = Date.now();
+
+  const { data: projects } = await supabaseAdmin
+    .from("projects")
+    .select("slug, created_at")
+    .eq("is_rescue", true)
+    .eq("status", "collecting");
+
+  const results: { slug: string; waiting: number; emailed: number }[] = [];
+  for (const p of projects ?? []) {
+    const ageHours = (now - new Date(p.created_at).getTime()) / 3600_000;
+    const due = (ageHours >= 4 && ageHours < 5) || (ageHours >= 24 && ageHours < 25);
+    if (!due) continue;
+    try {
+      const r = await nudgeProject(p.slug, origin);
+      results.push({ slug: p.slug, waiting: r.waiting.length, emailed: r.emailed });
+    } catch {
+      // one bad rescue shouldn't stop the batch
+    }
+  }
+  return results;
+}
