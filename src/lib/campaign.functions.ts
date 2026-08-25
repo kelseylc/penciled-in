@@ -13,7 +13,7 @@ const memberSchema = z.object({
 const sessionZeroSchema = z.object({
   campaign_name: z.string().min(1).max(120),
   system: z.string().max(80).nullable(),
-  cadence: z.enum(["weekly", "biweekly", "monthly", "quarterly"]),
+  cadence: z.enum(["weekly", "biweekly", "monthly", "quarterly", "adhoc"]),
   duration_minutes: z.number().int().min(30).max(1440),
   table_rule: z.enum(["play_anyway", "strict_quorum", "everyone"]),
   auto_lock_rescue: z.boolean(),
@@ -77,15 +77,16 @@ export const createCampaign = createServerFn({ method: "POST" })
     );
     if (mErr) throw new Error(mErr.message);
 
+    const isAdHoc = data.cadence === "adhoc";
     const { data: project, error: pErr } = await supabase
       .from("projects")
       .insert({
-        name: `${data.campaign_name} — cadence`,
+        name: isAdHoc ? data.campaign_name : `${data.campaign_name} — cadence`,
         template: "dnd",
         app_mode: "campaign",
         duration_minutes: data.duration_minutes,
-        mode: "recurring",
-        cadence: data.cadence,
+        mode: isAdHoc ? "one_off" : "recurring",
+        cadence: isAdHoc ? null : data.cadence,
         window_mode: "rolling",
         window_start: data.window_start,
         window_end: data.window_end,

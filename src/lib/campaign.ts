@@ -44,4 +44,5 @@ export const CADENCE_LABELS: Record<string, string> = {
   biweekly: "Every other week",
   monthly: "Monthly",
   quarterly: "Quarterly",
+  adhoc: "Ad hoc (one-off)",
 };

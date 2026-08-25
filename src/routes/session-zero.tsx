@@ -46,7 +46,7 @@ export const Route = createFileRoute("/session-zero")({
   ),
 });
 
-type Cadence = "weekly" | "biweekly" | "monthly";
+type Cadence = "weekly" | "biweekly" | "monthly" | "adhoc";
 
 interface PartyMember {
   key: string;
@@ -56,6 +56,71 @@ interface PartyMember {
 }
 
 const STEPS = ["The campaign", "The party", "The cadence", "Table rules", "Review"];
+
+/**
+ * A slider you can actually read: current value called out, end values pinned,
+ * and labelled ticks underneath so it's obvious what you're selecting.
+ */
+function TickSlider({
+  caption,
+  value,
+  min,
+  max,
+  step,
+  ticks,
+  formatValue,
+  onChange,
+}: {
+  caption: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  ticks: number[];
+  formatValue: (v: number) => string;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div>
+      <div className="flex items-baseline justify-between">
+        <span className="text-xs font-medium text-muted-foreground">{caption}</span>
+        <span className="text-sm font-bold text-primary">{formatValue(value)}</span>
+      </div>
+      <Slider
+        className="mt-2"
+        value={[value]}
+        min={min}
+        max={max}
+        step={step}
+        onValueChange={([v]) => onChange(v ?? value)}
+        aria-label={caption}
+        aria-valuetext={formatValue(value)}
+      />
+      <div className="relative mt-1.5 h-8">
+        {ticks.map((tick) => (
+          <div
+            key={tick}
+            className={cn(
+              "absolute top-0 flex flex-col",
+              tick === min
+                ? "items-start"
+                : tick === max
+                  ? "-translate-x-full items-end"
+                  : "-translate-x-1/2 items-center",
+            )}
+            style={{ left: `${((tick - min) / (max - min)) * 100}%` }}
+          >
+            <span className="h-1.5 w-px bg-border" />
+            <span className="mt-1 whitespace-nowrap text-[10px] text-muted-foreground">
+              {formatValue(tick)}
+            </span>
+          </div>
+        ))}
+
+      </div>
+    </div>
+  );
+}
 
 function SessionZero() {
   const navigate = useNavigate();
@@ -314,8 +379,8 @@ function SessionZero() {
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
-              {(["weekly", "biweekly", "monthly"] as Cadence[]).map((option) => (
+            <div className="grid grid-cols-2 gap-2">
+              {(["weekly", "biweekly", "monthly", "adhoc"] as Cadence[]).map((option) => (
                 <button
                   key={option}
                   type="button"
@@ -332,6 +397,14 @@ function SessionZero() {
                 </button>
               ))}
             </div>
+
+            {cadence === "adhoc" && (
+              <p className="rounded-2xl bg-muted p-3 text-xs text-muted-foreground">
+                One session only — no repeating cadence. You'll still pick times and lock a
+                date with the party.
+              </p>
+            )}
+
 
             <div>
               <Label className="text-sm font-semibold">Which days could work?</Label>
@@ -360,40 +433,46 @@ function SessionZero() {
               <Label className="text-sm font-semibold">
                 Between {formatHour(startAfter)} and {formatHour(endBy)}
               </Label>
-              <div className="mt-3 space-y-4">
-                <Slider
-                  value={[startAfter]}
+              <div className="mt-3 space-y-6">
+                <TickSlider
+                  caption="Earliest start"
+                  value={startAfter}
                   min={0}
                   max={23}
                   step={1}
-                  onValueChange={([v]) => setStartAfter(Math.min(v ?? 0, endBy - 1))}
-                  aria-label="Earliest start"
+                  ticks={[0, 6, 12, 18, 23]}
+                  formatValue={formatHour}
+                  onChange={(v) => setStartAfter(Math.min(v, endBy - 1))}
                 />
-                <Slider
-                  value={[endBy]}
+                <TickSlider
+                  caption="Done by"
+                  value={endBy}
                   min={1}
                   max={24}
                   step={1}
-                  onValueChange={([v]) => setEndBy(Math.max(v ?? 24, startAfter + 1))}
-                  aria-label="Done by"
+                  ticks={[1, 6, 12, 18, 24]}
+                  formatValue={formatHour}
+                  onChange={(v) => setEndBy(Math.max(v, startAfter + 1))}
                 />
               </div>
             </div>
 
             <div>
-              <Label className="text-sm font-semibold">
-                Session length: {durationHours} hrs
-              </Label>
-              <Slider
-                className="mt-3"
-                value={[durationHours]}
-                min={1}
-                max={8}
-                step={0.5}
-                onValueChange={([v]) => setDurationHours(v ?? 4)}
-                aria-label="Session length"
-              />
+              <Label className="text-sm font-semibold">Session length</Label>
+              <div className="mt-3">
+                <TickSlider
+                  caption="How long each session runs"
+                  value={durationHours}
+                  min={1}
+                  max={8}
+                  step={0.5}
+                  ticks={[1, 2, 4, 6, 8]}
+                  formatValue={(v) => `${v} hr${v === 1 ? "" : "s"}`}
+                  onChange={setDurationHours}
+                />
+              </div>
             </div>
+
 
             <div>
               <Label htmlFor="weeks" className="text-sm font-semibold">
@@ -463,9 +542,14 @@ function SessionZero() {
               <div>
                 <p className="text-sm font-bold">Auto-lock rescues</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  When a rescue poll clears quorum, lock that time immediately instead of waiting
-                  on the DM.
+                  If a session loses quorum, everyone gets a short poll of nearby times (same
+                  days and hours, within a week of the original). The first time that clears
+                  quorum — required players in, DM in — is locked automatically, and the whole
+                  party gets an email plus a banner with the new date and who's in. Only that one
+                  session moves; the {CADENCE_LABELS[cadence]!.toLowerCase()} cadence stays put.
+                  Turn this off and the DM picks the winning time by hand.
                 </p>
+
               </div>
               <Switch checked={autoLock} onCheckedChange={setAutoLock} aria-label="Auto-lock rescues" />
             </div>
@@ -477,7 +561,11 @@ function SessionZero() {
             <div>
               <h1 className="text-2xl font-black tracking-tight">Send this to the party</h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                {finalSlots.length} times, {CADENCE_LABELS[cadence]!.toLowerCase()} cadence,{" "}
+                {finalSlots.length} times,{" "}
+                {cadence === "adhoc"
+                  ? "one-off session"
+                  : `${CADENCE_LABELS[cadence]!.toLowerCase()} cadence`}
+                ,{" "}
                 {describeTableRule(tableRule, quorum, partySize).toLowerCase()}
               </p>
             </div>
