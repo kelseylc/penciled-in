@@ -46,7 +46,7 @@ export const Route = createFileRoute("/session-zero")({
   ),
 });
 
-type Cadence = "weekly" | "biweekly" | "monthly";
+type Cadence = "weekly" | "biweekly" | "monthly" | "adhoc";
 
 interface PartyMember {
   key: string;
