@@ -380,7 +380,7 @@ function OccurrenceCard({
 
   return (
     <article
-      className={`rounded-2xl border border-border bg-card p-4 ${campaign ? "campaign-scope" : ""}`}
+      className={`rounded-2xl border border-border bg-card p-4 ${campaign ? "campaign-scope" : "plans-scope"}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">

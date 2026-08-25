@@ -62,6 +62,10 @@
   --color-campaign: var(--campaign);
   --color-campaign-foreground: var(--campaign-foreground);
   --color-campaign-muted: var(--campaign-muted);
+  --color-plans: var(--plans);
+  --color-plans-foreground: var(--plans-foreground);
+  --color-plans-muted: var(--plans-muted);
+
 }
 
 :root {
@@ -102,7 +106,13 @@
   --campaign: oklch(0.47 0.2 26);
   --campaign-foreground: oklch(0.99 0.01 85);
   --campaign-muted: oklch(0.95 0.03 25);
+  /* Events mode accent: seafoam teal. */
+  --plans: oklch(0.58 0.11 196);
+  --plans-foreground: oklch(0.99 0.01 196);
+  --plans-muted: oklch(0.93 0.05 190);
+  --plans-accent-foreground: oklch(0.28 0.06 196);
 }
+
 
 .dark {
   --background: oklch(0.129 0.042 264.695);
@@ -140,7 +150,12 @@
   --campaign: oklch(0.62 0.21 26);
   --campaign-foreground: oklch(0.99 0.01 85);
   --campaign-muted: oklch(0.28 0.08 25);
+  --plans: oklch(0.72 0.11 190);
+  --plans-foreground: oklch(0.18 0.04 196);
+  --plans-muted: oklch(0.3 0.06 195);
+  --plans-accent-foreground: oklch(0.95 0.02 190);
 }
+
 
 /*
  * Campaign surfaces re-point the shared accent tokens at crimson, so every
@@ -150,7 +165,23 @@
   --primary: var(--campaign);
   --primary-foreground: var(--campaign-foreground);
   --ring: var(--campaign);
+  --accent: var(--campaign-muted);
 }
+
+/*
+ * Events ("plans") mode: seafoam teal. Applied on <html> by ModeThemeSync so
+ * the palette follows the user across every page, and on .plans-scope for
+ * objects stamped as plans inside a campaign-default shell.
+ */
+.mode-plans,
+.plans-scope {
+  --primary: var(--plans);
+  --primary-foreground: var(--plans-foreground);
+  --ring: var(--plans);
+  --accent: var(--plans-muted);
+  --accent-foreground: var(--plans-accent-foreground);
+}
+
 
 @layer base {
   * {
