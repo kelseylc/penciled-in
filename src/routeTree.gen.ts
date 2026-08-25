@@ -24,6 +24,7 @@ import { Route as OIdRouteImport } from './routes/o.$id'
 import { Route as PSlugRouteImport } from './routes/p.$slug'
 import { Route as ResultsSlugRouteImport } from './routes/results.$slug'
 import { Route as ShareSlugRouteImport } from './routes/share.$slug'
+import { Route as ApiPublicHooksDriftAlarmRouteImport } from './routes/api/public/hooks/drift-alarm'
 import { Route as ApiPublicHooksNudgeDeadlinesRouteImport } from './routes/api/public/hooks/nudge-deadlines'
 
 const IndexRoute = IndexRouteImport.update({
@@ -101,6 +102,12 @@ const ShareSlugRoute = ShareSlugRouteImport.update({
   path: '/share/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksDriftAlarmRoute =
+  ApiPublicHooksDriftAlarmRouteImport.update({
+    id: '/api/public/hooks/drift-alarm',
+    path: '/api/public/hooks/drift-alarm',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksNudgeDeadlinesRoute =
   ApiPublicHooksNudgeDeadlinesRouteImport.update({
     id: '/api/public/hooks/nudge-deadlines',
@@ -124,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/p/$slug': typeof PSlugRoute
   '/results/$slug': typeof ResultsSlugRoute
   '/share/$slug': typeof ShareSlugRoute
+  '/api/public/hooks/drift-alarm': typeof ApiPublicHooksDriftAlarmRoute
   '/api/public/hooks/nudge-deadlines': typeof ApiPublicHooksNudgeDeadlinesRoute
 }
 export interface FileRoutesByTo {
@@ -142,6 +150,7 @@ export interface FileRoutesByTo {
   '/p/$slug': typeof PSlugRoute
   '/results/$slug': typeof ResultsSlugRoute
   '/share/$slug': typeof ShareSlugRoute
+  '/api/public/hooks/drift-alarm': typeof ApiPublicHooksDriftAlarmRoute
   '/api/public/hooks/nudge-deadlines': typeof ApiPublicHooksNudgeDeadlinesRoute
 }
 export interface FileRoutesById {
@@ -161,6 +170,7 @@ export interface FileRoutesById {
   '/p/$slug': typeof PSlugRoute
   '/results/$slug': typeof ResultsSlugRoute
   '/share/$slug': typeof ShareSlugRoute
+  '/api/public/hooks/drift-alarm': typeof ApiPublicHooksDriftAlarmRoute
   '/api/public/hooks/nudge-deadlines': typeof ApiPublicHooksNudgeDeadlinesRoute
 }
 export interface FileRouteTypes {
@@ -181,6 +191,7 @@ export interface FileRouteTypes {
     | '/p/$slug'
     | '/results/$slug'
     | '/share/$slug'
+    | '/api/public/hooks/drift-alarm'
     | '/api/public/hooks/nudge-deadlines'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -199,6 +210,7 @@ export interface FileRouteTypes {
     | '/p/$slug'
     | '/results/$slug'
     | '/share/$slug'
+    | '/api/public/hooks/drift-alarm'
     | '/api/public/hooks/nudge-deadlines'
   id:
     | '__root__'
@@ -217,6 +229,7 @@ export interface FileRouteTypes {
     | '/p/$slug'
     | '/results/$slug'
     | '/share/$slug'
+    | '/api/public/hooks/drift-alarm'
     | '/api/public/hooks/nudge-deadlines'
   fileRoutesById: FileRoutesById
 }
@@ -236,6 +249,7 @@ export interface RootRouteChildren {
   PSlugRoute: typeof PSlugRoute
   ResultsSlugRoute: typeof ResultsSlugRoute
   ShareSlugRoute: typeof ShareSlugRoute
+  ApiPublicHooksDriftAlarmRoute: typeof ApiPublicHooksDriftAlarmRoute
   ApiPublicHooksNudgeDeadlinesRoute: typeof ApiPublicHooksNudgeDeadlinesRoute
 }
 
@@ -346,6 +360,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShareSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/drift-alarm': {
+      id: '/api/public/hooks/drift-alarm'
+      path: '/api/public/hooks/drift-alarm'
+      fullPath: '/api/public/hooks/drift-alarm'
+      preLoaderRoute: typeof ApiPublicHooksDriftAlarmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/nudge-deadlines': {
       id: '/api/public/hooks/nudge-deadlines'
       path: '/api/public/hooks/nudge-deadlines'
@@ -372,6 +393,7 @@ const rootRouteChildren: RootRouteChildren = {
   PSlugRoute: PSlugRoute,
   ResultsSlugRoute: ResultsSlugRoute,
   ShareSlugRoute: ShareSlugRoute,
+  ApiPublicHooksDriftAlarmRoute: ApiPublicHooksDriftAlarmRoute,
   ApiPublicHooksNudgeDeadlinesRoute: ApiPublicHooksNudgeDeadlinesRoute,
 }
 export const routeTree = rootRouteImport
