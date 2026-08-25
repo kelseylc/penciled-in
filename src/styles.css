@@ -150,7 +150,23 @@
   --primary: var(--campaign);
   --primary-foreground: var(--campaign-foreground);
   --ring: var(--campaign);
+  --accent: var(--campaign-muted);
 }
+
+/*
+ * Events ("plans") mode: seafoam teal. Applied on <html> by ModeThemeSync so
+ * the palette follows the user across every page, and on .plans-scope for
+ * objects stamped as plans inside a campaign-default shell.
+ */
+.mode-plans,
+.plans-scope {
+  --primary: var(--plans);
+  --primary-foreground: var(--plans-foreground);
+  --ring: var(--plans);
+  --accent: var(--plans-muted);
+  --accent-foreground: var(--plans-accent-foreground);
+}
+
 
 @layer base {
   * {
