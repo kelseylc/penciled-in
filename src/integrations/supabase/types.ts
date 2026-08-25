@@ -93,6 +93,7 @@ export type Database = {
           blackout_dates: string[]
           group_member_id: string | null
           id: string
+          last_confirmed_at: string | null
           profile_id: string | null
           updated_at: string
           weekly_pattern: Json
@@ -101,6 +102,7 @@ export type Database = {
           blackout_dates?: string[]
           group_member_id?: string | null
           id?: string
+          last_confirmed_at?: string | null
           profile_id?: string | null
           updated_at?: string
           weekly_pattern?: Json
@@ -109,6 +111,7 @@ export type Database = {
           blackout_dates?: string[]
           group_member_id?: string | null
           id?: string
+          last_confirmed_at?: string | null
           profile_id?: string | null
           updated_at?: string
           weekly_pattern?: Json
@@ -187,6 +190,7 @@ export type Database = {
           mode: string
           name: string
           owner_id: string | null
+          paused_at: string | null
           session_counter: number
           slug: string
           table_rule: string | null
@@ -201,6 +205,7 @@ export type Database = {
           mode?: string
           name: string
           owner_id?: string | null
+          paused_at?: string | null
           session_counter?: number
           slug: string
           table_rule?: string | null
@@ -215,6 +220,7 @@ export type Database = {
           mode?: string
           name?: string
           owner_id?: string | null
+          paused_at?: string | null
           session_counter?: number
           slug?: string
           table_rule?: string | null
@@ -275,6 +281,7 @@ export type Database = {
       }
       occurrences: {
         Row: {
+          announced_at: string | null
           created_at: string
           id: string
           moved_at: string | null
@@ -287,6 +294,7 @@ export type Database = {
           status: string
         }
         Insert: {
+          announced_at?: string | null
           created_at?: string
           id?: string
           moved_at?: string | null
@@ -299,6 +307,7 @@ export type Database = {
           status?: string
         }
         Update: {
+          announced_at?: string | null
           created_at?: string
           id?: string
           moved_at?: string | null
