@@ -57,6 +57,63 @@ interface PartyMember {
 
 const STEPS = ["The campaign", "The party", "The cadence", "Table rules", "Review"];
 
+/**
+ * A slider you can actually read: current value called out, end values pinned,
+ * and labelled ticks underneath so it's obvious what you're selecting.
+ */
+function TickSlider({
+  caption,
+  value,
+  min,
+  max,
+  step,
+  ticks,
+  formatValue,
+  onChange,
+}: {
+  caption: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  ticks: number[];
+  formatValue: (v: number) => string;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div>
+      <div className="flex items-baseline justify-between">
+        <span className="text-xs font-medium text-muted-foreground">{caption}</span>
+        <span className="text-sm font-bold text-primary">{formatValue(value)}</span>
+      </div>
+      <Slider
+        className="mt-2"
+        value={[value]}
+        min={min}
+        max={max}
+        step={step}
+        onValueChange={([v]) => onChange(v ?? value)}
+        aria-label={caption}
+        aria-valuetext={formatValue(value)}
+      />
+      <div className="relative mt-1.5 h-8">
+        {ticks.map((tick) => (
+          <div
+            key={tick}
+            className="absolute top-0 flex -translate-x-1/2 flex-col items-center"
+            style={{ left: `${((tick - min) / (max - min)) * 100}%` }}
+          >
+            <span className="h-1.5 w-px bg-border" />
+            <span className="mt-1 whitespace-nowrap text-[10px] text-muted-foreground">
+              {formatValue(tick)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function SessionZero() {
   const navigate = useNavigate();
   const run = useServerFn(createCampaign);
