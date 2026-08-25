@@ -304,6 +304,9 @@ export const submitResponses = createServerFn({ method: "POST" })
         responses: z
           .array(z.object({ candidate_slot_id: z.string().uuid(), state: stateSchema }))
           .max(200),
+        /** "Remember this as my usual" — default-on in campaign mode. */
+        rememberUsual: z.boolean().optional(),
+        origin: z.string().url().optional(),
       })
       .parse(data),
   )
@@ -319,7 +322,7 @@ export const submitResponses = createServerFn({ method: "POST" })
 
     const { data: participant } = await supabaseAdmin
       .from("participants")
-      .select("id")
+      .select("id, profile_id")
       .eq("project_id", project.id)
       .eq("token", data.token)
       .maybeSingle();
@@ -327,7 +330,7 @@ export const submitResponses = createServerFn({ method: "POST" })
 
     const { data: slots } = await supabaseAdmin
       .from("candidate_slots")
-      .select("id")
+      .select("id, start_utc, end_utc")
       .eq("project_id", project.id);
     const valid = new Set((slots ?? []).map((s) => s.id));
     const rows = data.responses
@@ -349,9 +352,41 @@ export const submitResponses = createServerFn({ method: "POST" })
       .update({ responded_at: new Date().toISOString(), timezone: data.timezone })
       .eq("id", participant.id);
 
+    // The cheapest moment to learn someone's usual week is the moment they
+    // just described it slot by slot.
+    let remembered = false;
+    if (data.rememberUsual && participant.profile_id) {
+      const { rememberUsualFromAnswers } = await import("@/lib/remember-usual.server");
+      remembered = await rememberUsualFromAnswers(
+        participant.profile_id,
+        (slots ?? []).map((s) => ({ id: s.id, start_utc: s.start_utc, end_utc: s.end_utc })),
+        data.responses,
+        data.timezone,
+      );
+    }
+
     // A rescue poll locks itself the instant a time clears the table's bar.
     const { maybeAutoLockRescue } = await import("@/lib/rescue.server");
     const autoLock = await maybeAutoLockRescue(project.id);
 
-    return { ok: true, saved: rows.length, autoLocked: autoLock.locked, lockedStart: autoLock.startUtc ?? null };
+    // Auto-lock only earns its keep if the table hears about it immediately.
+    let announcement: string | null = null;
+    if (autoLock.locked && autoLock.occurrenceId) {
+      const { announceMovedOccurrence } = await import("@/lib/announce.server");
+      const result = await announceMovedOccurrence(
+        autoLock.occurrenceId,
+        data.origin ?? "https://penciled-in.lovable.app",
+      );
+      announcement = result?.text ?? null;
+    }
+
+    return {
+      ok: true,
+      saved: rows.length,
+      autoLocked: autoLock.locked,
+      lockedStart: autoLock.startUtc ?? null,
+      announcement,
+      remembered,
+    };
+
   });
