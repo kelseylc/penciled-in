@@ -461,7 +461,7 @@ function SessionZero() {
               <Label className="text-sm font-semibold">Session length</Label>
               <div className="mt-3">
                 <TickSlider
-                  caption="Session length"
+                  caption="How long each session runs"
                   value={durationHours}
                   min={1}
                   max={8}
