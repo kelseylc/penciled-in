@@ -168,13 +168,6 @@ export async function driftSweep(origin: string): Promise<DriftReport[]> {
             { label: "Open the campaign", link },
           ),
         );
-        // Recorded so the alarm reads as "we noticed", not as spam.
-        if (emailed) {
-          await supabaseAdmin
-            .from("groups")
-            .update({ name: group.name })
-            .eq("id", group.id);
-        }
       }
     }
 
