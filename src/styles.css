@@ -62,6 +62,10 @@
   --color-campaign: var(--campaign);
   --color-campaign-foreground: var(--campaign-foreground);
   --color-campaign-muted: var(--campaign-muted);
+  --color-plans: var(--plans);
+  --color-plans-foreground: var(--plans-foreground);
+  --color-plans-muted: var(--plans-muted);
+
 }
 
 :root {
