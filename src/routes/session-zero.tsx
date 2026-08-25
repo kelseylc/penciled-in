@@ -368,40 +368,46 @@ function SessionZero() {
               <Label className="text-sm font-semibold">
                 Between {formatHour(startAfter)} and {formatHour(endBy)}
               </Label>
-              <div className="mt-3 space-y-4">
-                <Slider
-                  value={[startAfter]}
+              <div className="mt-3 space-y-6">
+                <TickSlider
+                  caption="Earliest start"
+                  value={startAfter}
                   min={0}
                   max={23}
                   step={1}
-                  onValueChange={([v]) => setStartAfter(Math.min(v ?? 0, endBy - 1))}
-                  aria-label="Earliest start"
+                  ticks={[0, 6, 12, 18, 23]}
+                  formatValue={formatHour}
+                  onChange={(v) => setStartAfter(Math.min(v, endBy - 1))}
                 />
-                <Slider
-                  value={[endBy]}
+                <TickSlider
+                  caption="Done by"
+                  value={endBy}
                   min={1}
                   max={24}
                   step={1}
-                  onValueChange={([v]) => setEndBy(Math.max(v ?? 24, startAfter + 1))}
-                  aria-label="Done by"
+                  ticks={[1, 6, 12, 18, 24]}
+                  formatValue={formatHour}
+                  onChange={(v) => setEndBy(Math.max(v, startAfter + 1))}
                 />
               </div>
             </div>
 
             <div>
-              <Label className="text-sm font-semibold">
-                Session length: {durationHours} hrs
-              </Label>
-              <Slider
-                className="mt-3"
-                value={[durationHours]}
-                min={1}
-                max={8}
-                step={0.5}
-                onValueChange={([v]) => setDurationHours(v ?? 4)}
-                aria-label="Session length"
-              />
+              <Label className="text-sm font-semibold">Session length</Label>
+              <div className="mt-3">
+                <TickSlider
+                  caption="Session length"
+                  value={durationHours}
+                  min={1}
+                  max={8}
+                  step={0.5}
+                  ticks={[1, 2, 4, 6, 8]}
+                  formatValue={(v) => `${v} hr${v === 1 ? "" : "s"}`}
+                  onChange={setDurationHours}
+                />
+              </div>
             </div>
+
 
             <div>
               <Label htmlFor="weeks" className="text-sm font-semibold">
