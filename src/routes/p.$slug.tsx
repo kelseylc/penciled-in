@@ -91,6 +91,9 @@ function RespondPage() {
   const [predicted, setPredicted] = useState<Set<string>>(() => new Set());
 
   const [bannerOpen, setBannerOpen] = useState(true);
+  /** Campaign polls default this on — the ask is cheapest right after answering. */
+  const [rememberUsual, setRememberUsual] = useState(false);
+  const [autoLocked, setAutoLocked] = useState<string | null>(null);
   const [changingTz, setChangingTz] = useState(false);
   const [welcomeBack, setWelcomeBack] = useState(false);
 
@@ -112,6 +115,12 @@ function RespondPage() {
   });
 
   const bundle = bundleQuery.data;
+  const campaign = bundle?.project.app_mode === "campaign";
+  const isRescue = !!bundle?.project.is_rescue;
+
+  useEffect(() => {
+    if (campaign) setRememberUsual(true);
+  }, [campaign]);
 
   // Resume an existing response when a valid token is present.
   useEffect(() => {
@@ -215,11 +224,16 @@ function RespondPage() {
             candidate_slot_id,
             state,
           })),
+          rememberUsual: rememberUsual && !!bundle?.me?.canRemember,
+          origin: typeof window === "undefined" ? undefined : window.location.origin,
         },
       });
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ["respond", slug] });
+      if (res.autoLocked && res.lockedStart) {
+        setAutoLocked(res.lockedStart);
+      }
       setScreen("done");
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Couldn't save your answer"),
