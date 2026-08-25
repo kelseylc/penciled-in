@@ -146,7 +146,12 @@
   --campaign: oklch(0.62 0.21 26);
   --campaign-foreground: oklch(0.99 0.01 85);
   --campaign-muted: oklch(0.28 0.08 25);
+  --plans: oklch(0.72 0.11 190);
+  --plans-foreground: oklch(0.18 0.04 196);
+  --plans-muted: oklch(0.3 0.06 195);
+  --plans-accent-foreground: oklch(0.95 0.02 190);
 }
+
 
 /*
  * Campaign surfaces re-point the shared accent tokens at crimson, so every
