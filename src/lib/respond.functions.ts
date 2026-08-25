@@ -296,5 +296,9 @@ export const submitResponses = createServerFn({ method: "POST" })
       .update({ responded_at: new Date().toISOString(), timezone: data.timezone })
       .eq("id", participant.id);
 
-    return { ok: true, saved: rows.length };
+    // A rescue poll locks itself the instant a time clears the table's bar.
+    const { maybeAutoLockRescue } = await import("@/lib/rescue.server");
+    const autoLock = await maybeAutoLockRescue(project.id);
+
+    return { ok: true, saved: rows.length, autoLocked: autoLock.locked, lockedStart: autoLock.startUtc ?? null };
   });

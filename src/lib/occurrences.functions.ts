@@ -42,6 +42,14 @@ export interface OrganizerOccurrence {
   noResponseNames: string[];
   requiredOut: string[];
   repollSlug: string | null;
+  /** "campaign" sessions get the rescue loop and the played/session-number chrome. */
+  appMode: "campaign" | "plans";
+  sessionNumber: number | null;
+  playedAt: string | null;
+  /** Set when the session was moved by a rescue and nobody has acknowledged it. */
+  movedAt: string | null;
+  groupId: string | null;
+  daysSinceLastPlayed: number | null;
 }
 
 export const getOccurrenceGuest = createServerFn({ method: "POST" })
@@ -92,7 +100,7 @@ export const actOnOccurrence = createServerFn({ method: "POST" })
     z
       .object({
         occurrenceId: z.string().uuid(),
-        action: z.enum(["repoll", "go_ahead", "cancel"]),
+        action: z.enum(["repoll", "go_ahead", "cancel", "played"]),
       })
       .parse(data),
   )

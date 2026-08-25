@@ -16,6 +16,7 @@ import { Route as GroupsRouteImport } from './routes/groups'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as NewRouteImport } from './routes/new'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as SessionZeroRouteImport } from './routes/session-zero'
 import { Route as TestRouteImport } from './routes/test'
 import { Route as DSlugRouteImport } from './routes/d.$slug'
 import { Route as GSlugRouteImport } from './routes/g.$slug'
@@ -58,6 +59,11 @@ const NewRoute = NewRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SessionZeroRoute = SessionZeroRouteImport.update({
+  id: '/session-zero',
+  path: '/session-zero',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TestRoute = TestRouteImport.update({
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/home': typeof HomeRoute
   '/new': typeof NewRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/session-zero': typeof SessionZeroRoute
   '/test': typeof TestRoute
   '/d/$slug': typeof DSlugRoute
   '/g/$slug': typeof GSlugRoute
@@ -127,6 +134,7 @@ export interface FileRoutesByTo {
   '/home': typeof HomeRoute
   '/new': typeof NewRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/session-zero': typeof SessionZeroRoute
   '/test': typeof TestRoute
   '/d/$slug': typeof DSlugRoute
   '/g/$slug': typeof GSlugRoute
@@ -145,6 +153,7 @@ export interface FileRoutesById {
   '/home': typeof HomeRoute
   '/new': typeof NewRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/session-zero': typeof SessionZeroRoute
   '/test': typeof TestRoute
   '/d/$slug': typeof DSlugRoute
   '/g/$slug': typeof GSlugRoute
@@ -164,6 +173,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/new'
     | '/reset-password'
+    | '/session-zero'
     | '/test'
     | '/d/$slug'
     | '/g/$slug'
@@ -181,6 +191,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/new'
     | '/reset-password'
+    | '/session-zero'
     | '/test'
     | '/d/$slug'
     | '/g/$slug'
@@ -198,6 +209,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/new'
     | '/reset-password'
+    | '/session-zero'
     | '/test'
     | '/d/$slug'
     | '/g/$slug'
@@ -216,6 +228,7 @@ export interface RootRouteChildren {
   HomeRoute: typeof HomeRoute
   NewRoute: typeof NewRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SessionZeroRoute: typeof SessionZeroRoute
   TestRoute: typeof TestRoute
   DSlugRoute: typeof DSlugRoute
   GSlugRoute: typeof GSlugRoute
@@ -275,6 +288,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/session-zero': {
+      id: '/session-zero'
+      path: '/session-zero'
+      fullPath: '/session-zero'
+      preLoaderRoute: typeof SessionZeroRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/test': {
@@ -344,6 +364,7 @@ const rootRouteChildren: RootRouteChildren = {
   HomeRoute: HomeRoute,
   NewRoute: NewRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SessionZeroRoute: SessionZeroRoute,
   TestRoute: TestRoute,
   DSlugRoute: DSlugRoute,
   GSlugRoute: GSlugRoute,

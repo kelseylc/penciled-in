@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/integrations/supabase/types";
 import { createRepollProject } from "@/lib/occurrences.server";
+import { daysSinceLastPlayed, ensureRescueProject, markSessionPlayed } from "@/lib/rescue.server";
 import type { OrganizerOccurrence } from "@/lib/occurrences.functions";
 
 type SB = SupabaseClient<Database>;
@@ -12,19 +13,24 @@ export async function loadOrganizerOccurrences(
 ): Promise<OrganizerOccurrence[]> {
   let projectQuery = sb
     .from("projects")
-    .select("id, name, slug, quorum_min, mode, status")
-    .is("repoll_for_occurrence_id", null);
+    .select("id, name, slug, quorum_min, mode, status, app_mode, group_id")
+    .is("repoll_for_occurrence_id", null)
+    .eq("is_rescue", false);
   if (slug) projectQuery = projectQuery.eq("slug", slug);
 
   const { data: projects } = await projectQuery;
   const projectIds = (projects ?? []).map((p) => p.id);
   if (projectIds.length === 0) return [];
 
-  const nowIso = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+  // Reaches a week back so a session that has already happened can still be
+  // marked "we played" — that stamp is what keeps the campaign health honest.
+  const nowIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const [{ data: occurrences }, { data: participants }, { data: repolls }] = await Promise.all([
     sb
       .from("occurrences")
-      .select("id, project_id, scheduled_start_utc, scheduled_end_utc, status")
+      .select(
+        "id, project_id, scheduled_start_utc, scheduled_end_utc, status, session_number, played_at, moved_at, rescue_project_id",
+      )
       .in("project_id", projectIds)
       .gte("scheduled_start_utc", nowIso)
       .order("scheduled_start_utc", { ascending: true }),
@@ -57,6 +63,14 @@ export async function loadOrganizerOccurrences(
   for (const r of repolls ?? []) {
     if (r.repoll_for_occurrence_id) repollByOcc.set(r.repoll_for_occurrence_id, r.slug);
   }
+
+  // "Days since we last played" is per campaign, so it is resolved once per
+  // group rather than once per session.
+  const groupIds = [...new Set((projects ?? []).map((p) => p.group_id).filter(Boolean))] as string[];
+  const gapByGroup = new Map<string, number | null>();
+  await Promise.all(
+    groupIds.map(async (id) => gapByGroup.set(id, await daysSinceLastPlayed(id))),
+  );
 
   return (occurrences ?? []).map((occ) => {
     const project = (projects ?? []).find((p) => p.id === occ.project_id)!;
@@ -94,6 +108,12 @@ export async function loadOrganizerOccurrences(
       noResponseNames,
       requiredOut,
       repollSlug: repollByOcc.get(occ.id) ?? null,
+      appMode: project.app_mode === "campaign" ? ("campaign" as const) : ("plans" as const),
+      sessionNumber: occ.session_number,
+      playedAt: occ.played_at,
+      movedAt: occ.moved_at,
+      groupId: project.group_id,
+      daysSinceLastPlayed: project.group_id ? (gapByGroup.get(project.group_id) ?? null) : null,
     };
   });
 }
@@ -102,7 +122,7 @@ export async function runOccurrenceAction(
   sb: SB,
   userId: string,
   occurrenceId: string,
-  action: "repoll" | "go_ahead" | "cancel",
+  action: "repoll" | "go_ahead" | "cancel" | "played",
 ) {
   // RLS check: the caller must be able to see this occurrence.
   const { data: occ } = await sb
@@ -113,8 +133,17 @@ export async function runOccurrenceAction(
   if (!occ) throw new Error("You can't manage that session.");
 
   if (action === "repoll") {
+    // Campaigns get the five-chip rescue poll; everything else keeps the
+    // full ±7 day re-poll grid.
+    const rescue = await ensureRescueProject(occurrenceId);
+    if (rescue) return { ok: true, repollSlug: rescue.slug };
     const { slug } = await createRepollProject(occurrenceId, userId);
     return { ok: true, repollSlug: slug };
+  }
+
+  if (action === "played") {
+    await markSessionPlayed(occurrenceId);
+    return { ok: true, repollSlug: null };
   }
 
   if (action === "cancel") {

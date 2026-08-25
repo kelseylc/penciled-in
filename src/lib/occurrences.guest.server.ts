@@ -140,6 +140,9 @@ export async function saveOccurrenceRsvp(input: {
     ok: true,
     token: participant.token,
     status: evaluation.status,
+    // Present the second the table goes short, so the person who just said
+    // "out" is the one who gets to offer another night.
+    rescueSlug: evaluation.rescueSlug,
     tally: {
       attending: evaluation.attending,
       out: evaluation.out,

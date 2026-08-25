@@ -10,6 +10,8 @@ export type OccurrenceStatus = "pending" | "confirmed" | "at_risk" | "repolling"
 
 export interface EvaluationResult {
   status: OccurrenceStatus;
+  /** Set when a rescue poll is live for this session. */
+  rescueSlug: string | null;
   attending: number;
   out: number;
   pendingCount: number;
@@ -91,8 +93,35 @@ export async function evaluateOccurrence(occurrenceId: string): Promise<Evaluati
     await supabaseAdmin.from("occurrences").update({ status }).eq("id", occurrenceId);
   }
 
+  // In a campaign, the rescue poll is not something the DM has to start — the
+  // moment the table is short, it already exists.
+  let rescueSlug: string | null = null;
+  if (status === "at_risk") {
+    const { ensureRescueProject } = await import("@/lib/rescue.server");
+    const rescue = await ensureRescueProject(occurrenceId);
+    if (rescue) {
+      rescueSlug = rescue.slug;
+      status = "repolling";
+    }
+  } else if (occ.status === "repolling") {
+    const { data: refreshed } = await supabaseAdmin
+      .from("occurrences")
+      .select("rescue_project_id")
+      .eq("id", occurrenceId)
+      .maybeSingle();
+    if (refreshed?.rescue_project_id) {
+      const { data: rescueProject } = await supabaseAdmin
+        .from("projects")
+        .select("slug")
+        .eq("id", refreshed.rescue_project_id)
+        .maybeSingle();
+      rescueSlug = rescueProject?.slug ?? null;
+    }
+  }
+
   return {
     status,
+    rescueSlug,
     attending,
     out: outNames.length,
     pendingCount,
