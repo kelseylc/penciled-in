@@ -191,6 +191,7 @@ export const getRespondBundle = createServerFn({ method: "POST" })
           display_name: participant.display_name,
           timezone: participant.timezone,
           responded: !!participant.responded_at,
+          canRemember: !!participant.profile_id,
           responses: (responses ?? []).map((r) => ({
             candidate_slot_id: r.candidate_slot_id,
             state: r.state as "yes" | "maybe" | "no",
@@ -211,7 +212,10 @@ export const getRespondBundle = createServerFn({ method: "POST" })
         response_deadline: project.response_deadline,
         status: project.status,
         mode: project.mode,
+        app_mode: project.app_mode,
+        is_rescue: project.is_rescue,
       },
+      rescue,
       slots: slots ?? [],
       participants: (participants ?? []).map((p) => ({
         id: p.id,
@@ -222,6 +226,7 @@ export const getRespondBundle = createServerFn({ method: "POST" })
       me,
     };
   });
+
 
 /** Claim an existing unclaimed participant by name, or add a new guest. */
 export const joinProject = createServerFn({ method: "POST" })
