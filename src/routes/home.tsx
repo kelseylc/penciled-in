@@ -28,13 +28,13 @@ type OccurrenceAction = "repoll" | "go_ahead" | "cancel" | "played" | "acknowled
 export const Route = createFileRoute("/home")({
   head: () => ({
     meta: [
-      { title: "My events — Penciled.in" },
+      { title: "My events — Party.up" },
       {
         name: "description",
         content:
           "See the next session for every campaign and group you run, spot at-risk nights early, and rescue just that session.",
       },
-      { property: "og:title", content: "My events — Penciled.in" },
+      { property: "og:title", content: "My events — Party.up" },
       {
         property: "og:description",
         content: "Confirmed, at risk or rescuing — the recurring loop at a glance.",

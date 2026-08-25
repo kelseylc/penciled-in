@@ -5,11 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { asAppMode, MODE_STORAGE_KEY, type AppMode } from "@/lib/mode";
 
 function readStored(): AppMode {
-  if (typeof window === "undefined") return "plans";
+  if (typeof window === "undefined") return "campaign";
   try {
     return asAppMode(window.localStorage.getItem(MODE_STORAGE_KEY));
   } catch {
-    return "plans";
+    return "campaign";
   }
 }
 
@@ -25,7 +25,7 @@ export function useAppMode() {
   const { user } = useAuth();
   // Start on "plans" so server and first client render agree; the stored value
   // lands in an effect right after hydration.
-  const [mode, setModeState] = useState<AppMode>("plans");
+  const [mode, setModeState] = useState<AppMode>("campaign");
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {

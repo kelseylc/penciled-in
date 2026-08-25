@@ -24,13 +24,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/session-zero")({
   head: () => ({
     meta: [
-      { title: "Session Zero — Penciled.in" },
+      { title: "Session Zero — Party.up" },
       {
         name: "description",
         content:
           "Set your campaign's cadence, quorum, and table rules once. Then send the party one link.",
       },
-      { property: "og:title", content: "Session Zero — Penciled.in" },
+      { property: "og:title", content: "Session Zero — Party.up" },
       {
         property: "og:description",
         content: "Set the cadence, the quorum, and the table rules once. Then send one link.",

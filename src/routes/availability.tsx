@@ -35,13 +35,13 @@ import {
 export const Route = createFileRoute("/availability")({
   head: () => ({
     meta: [
-      { title: "Your usual availability — Penciled.in" },
+      { title: "Your usual availability — Party.up" },
       {
         name: "description",
         content:
           "Set the times you're usually free once and we'll pre-fill your answers on every future plan.",
       },
-      { property: "og:title", content: "Your usual availability — Penciled.in" },
+      { property: "og:title", content: "Your usual availability — Party.up" },
       {
         property: "og:description",
         content: "Set it once, and future plans come pre-filled.",

@@ -25,13 +25,13 @@ type Search = { mode?: ScreenParam; redirect?: string };
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Organizer sign in — Penciled.in" },
+      { title: "Organizer sign in — Party.up" },
       {
         name: "description",
         content:
           "Sign in with your email and password. Responding to a plan never requires an account.",
       },
-      { property: "og:title", content: "Organizer sign in — Penciled.in" },
+      { property: "og:title", content: "Organizer sign in — Party.up" },
       {
         property: "og:description",
         content: "Organizers sign in here. Everyone else: takes 30 seconds — no signup.",

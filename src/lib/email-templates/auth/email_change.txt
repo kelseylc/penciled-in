@@ -1,9 +1,9 @@
 Confirm your new email
 
-Confirm the change from {{ .Email }} to {{ .NewEmail }} on your Penciled.in account.
+Confirm the change from {{ .Email }} to {{ .NewEmail }} on your Party.up account.
 
 {{ .ConfirmationURL }}
 
 Didn't request this? Ignore this email and your address stays as it is.
 
--- Penciled.in
+-- Party.up

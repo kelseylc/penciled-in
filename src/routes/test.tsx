@@ -14,13 +14,13 @@ import { enterTestMode, type TestModeSeed } from "@/lib/testmode.functions";
 export const Route = createFileRoute("/test")({
   head: () => ({
     meta: [
-      { title: "Test mode — Penciled.in" },
+      { title: "Test mode — Party.up" },
       {
         name: "description",
         content:
-          "Open every Penciled.in screen with seeded demo data — organizer, guest, results, and locked views.",
+          "Open every Party.up screen with seeded demo data — organizer, guest, results, and locked views.",
       },
-      { property: "og:title", content: "Test mode — Penciled.in" },
+      { property: "og:title", content: "Test mode — Party.up" },
       {
         property: "og:description",
         content: "Audit every screen with seeded demo data, no sign-in dance.",

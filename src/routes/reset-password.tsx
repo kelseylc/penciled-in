@@ -14,15 +14,15 @@ export const Route = createFileRoute("/reset-password")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Set a new password — Penciled.in" },
+      { title: "Set a new password — Party.up" },
       {
         name: "description",
-        content: "Choose a new password for your Penciled.in organizer account.",
+        content: "Choose a new password for your Party.up organizer account.",
       },
-      { property: "og:title", content: "Set a new password — Penciled.in" },
+      { property: "og:title", content: "Set a new password — Party.up" },
       {
         property: "og:description",
-        content: "Finish resetting your Penciled.in organizer password.",
+        content: "Finish resetting your Party.up organizer password.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

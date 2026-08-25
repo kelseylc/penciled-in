@@ -56,7 +56,7 @@ const SCHEMA = {
   },
 } as const;
 
-const SYSTEM = `You turn a short spoken or typed description of a social plan into a scheduling draft for a group-scheduling app called Penciled.in.
+const SYSTEM = `You turn a short spoken or typed description of a social plan into a scheduling draft for a group-scheduling app called Party.up.
 
 Rules:
 - Pick the closest template: brunch, dinner, movie (movie night), dnd (D&D / long game session), trip (multi-day / weekend away), hang (anything else).

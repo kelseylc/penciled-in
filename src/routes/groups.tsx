@@ -14,13 +14,13 @@ import { createGroup, listMyGroups, type MyGroup } from "@/lib/groups.functions"
 export const Route = createFileRoute("/groups")({
   head: () => ({
     meta: [
-      { title: "My groups — Penciled.in" },
+      { title: "My groups — Party.up" },
       {
         name: "description",
         content:
           "Save the people you plan with once, reuse them for every future plan, and hand co-organizer access to anyone in the group.",
       },
-      { property: "og:title", content: "My groups — Penciled.in" },
+      { property: "og:title", content: "My groups — Party.up" },
       {
         property: "og:description",
         content: "Reusable crews with shared scheduling memory and co-organizers.",

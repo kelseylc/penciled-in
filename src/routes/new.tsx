@@ -53,13 +53,13 @@ export const Route = createFileRoute("/new")({
 
   head: () => ({
     meta: [
-      { title: "New plan — Penciled.in" },
+      { title: "New plan — Party.up" },
       {
         name: "description",
         content:
           "Create a group plan in a few taps: name it, pick a date window, your people, and a quorum.",
       },
-      { property: "og:title", content: "New plan — Penciled.in" },
+      { property: "og:title", content: "New plan — Party.up" },
       {
         property: "og:description",
         content: "Name it, pick a date window, your people, and a quorum. Then share one link.",

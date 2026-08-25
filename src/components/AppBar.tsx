@@ -57,7 +57,7 @@ export function AppBar({ back = true, title }: Props) {
         to="/"
         className="flex min-h-11 min-w-0 flex-1 items-center truncate px-1 text-sm font-bold tracking-tight"
       >
-        {title ?? "Penciled.in"}
+        {title ?? "Party.up"}
       </Link>
 
       {!session && !onAuthScreen && (

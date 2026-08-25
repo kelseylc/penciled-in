@@ -159,7 +159,7 @@ export async function driftSweep(origin: string): Promise<DriftReport[]> {
         emailed = await sendEmail(
           owner.email,
           `${name}: ${days} days since you played`,
-          `It's been ${days} days since ${name} last played.\n\nThree honest options: pick a new cadence, run one rescue poll for a single night, or pause the campaign so we stop nagging.\n\n${link}\n\n— Penciled.in`,
+          `It's been ${days} days since ${name} last played.\n\nThree honest options: pick a new cadence, run one rescue poll for a single night, or pause the campaign so we stop nagging.\n\n${link}\n\n— Party.up`,
           emailShell(
             `${days} days since ${name} played`,
             `<p style="margin:0 0 12px;">No judgement — campaigns drift. Three honest options:</p>

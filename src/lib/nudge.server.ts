@@ -52,7 +52,7 @@ function nudgeHtml(name: string, projectName: string, link: string): string {
   </tr>
   </table>
   <p style="margin:16px 0 24px;font-size:13px;line-height:20px;color:#8A8079;">Or paste this into your browser:<br>${link}</p>
-  <p style="margin:0;font-size:13px;line-height:20px;color:#8A8079;">— Penciled.in</p>
+  <p style="margin:0;font-size:13px;line-height:20px;color:#8A8079;">— Party.up</p>
 </td></tr>
 </table>
 </td></tr>
@@ -76,7 +76,7 @@ async function sendResend(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Penciled.in <onboarding@resend.dev>",
+        from: "Party.up <onboarding@resend.dev>",
         to: [to],
         subject,
         // multipart: real text/plain alternative alongside the HTML part
@@ -134,7 +134,7 @@ export async function nudgeProject(slug: string, origin: string): Promise<NudgeR
         apiKey,
         to,
         `Quick one: ${project.name}`,
-        `Hi ${p.display_name},\n\nWe still need your times for ${project.name}. It takes about 30 seconds and there's no signup:\n\n${personal}\n\n— Penciled.in`,
+        `Hi ${p.display_name},\n\nWe still need your times for ${project.name}. It takes about 30 seconds and there's no signup:\n\n${personal}\n\n— Party.up`,
         nudgeHtml(p.display_name, project.name, personal),
       );
       if (ok) emailed += 1;
