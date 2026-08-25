@@ -2,6 +2,7 @@ import { addDays, addMonths } from "date-fns";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { emailShell, formatInZone, sendEmail } from "@/lib/email.server";
+import { DRIFT_ALARM_DAYS } from "@/lib/anti-drift.shared";
 import { daysSinceLastPlayed } from "@/lib/rescue.server";
 
 /**
@@ -14,7 +15,7 @@ import { daysSinceLastPlayed } from "@/lib/rescue.server";
  *     out loud, with three honest options including "pause".
  */
 
-export const DRIFT_ALARM_DAYS = 45;
+export { DRIFT_ALARM_DAYS } from "@/lib/anti-drift.shared";
 
 function advance(date: Date, cadence: string | null): Date {
   if (cadence === "biweekly") return addDays(date, 14);
