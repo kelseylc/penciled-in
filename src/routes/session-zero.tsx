@@ -553,7 +553,11 @@ function SessionZero() {
             <div>
               <h1 className="text-2xl font-black tracking-tight">Send this to the party</h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                {finalSlots.length} times, {CADENCE_LABELS[cadence]!.toLowerCase()} cadence,{" "}
+                {finalSlots.length} times,{" "}
+                {cadence === "adhoc"
+                  ? "one-off session"
+                  : `${CADENCE_LABELS[cadence]!.toLowerCase()} cadence`}
+                ,{" "}
                 {describeTableRule(tableRule, quorum, partySize).toLowerCase()}
               </p>
             </div>
