@@ -91,6 +91,9 @@ function RespondPage() {
   const [predicted, setPredicted] = useState<Set<string>>(() => new Set());
 
   const [bannerOpen, setBannerOpen] = useState(true);
+  /** Campaign polls default this on — the ask is cheapest right after answering. */
+  const [rememberUsual, setRememberUsual] = useState(false);
+  const [autoLocked, setAutoLocked] = useState<string | null>(null);
   const [changingTz, setChangingTz] = useState(false);
   const [welcomeBack, setWelcomeBack] = useState(false);
 
@@ -112,6 +115,12 @@ function RespondPage() {
   });
 
   const bundle = bundleQuery.data;
+  const campaign = bundle?.project.app_mode === "campaign";
+  const isRescue = !!bundle?.project.is_rescue;
+
+  useEffect(() => {
+    if (campaign) setRememberUsual(true);
+  }, [campaign]);
 
   // Resume an existing response when a valid token is present.
   useEffect(() => {
@@ -215,11 +224,16 @@ function RespondPage() {
             candidate_slot_id,
             state,
           })),
+          rememberUsual: rememberUsual && !!bundle?.me?.canRemember,
+          origin: typeof window === "undefined" ? undefined : window.location.origin,
         },
       });
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ["respond", slug] });
+      if (res.autoLocked && res.lockedStart) {
+        setAutoLocked(res.lockedStart);
+      }
       setScreen("done");
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Couldn't save your answer"),
@@ -339,11 +353,36 @@ function RespondPage() {
     const answeredCount = Object.keys(answers).length;
     return (
       <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-32 pt-8">
-        <h1 className="text-2xl font-black tracking-tight">When can you make it?</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          You're the {ordinal(respondedCount + (bundle.me?.responded ? 0 : 1))} of {totalCount} to
-          respond.
-        </p>
+        <h1 className="text-2xl font-black tracking-tight">
+          {isRescue ? "Which of these nights works?" : "When can you make it?"}
+        </h1>
+        {isRescue && bundle.rescue ? (
+          <p className="mt-1 text-sm text-muted-foreground">
+            {bundle.rescue.sessionLabel}
+            {bundle.rescue.originalStartUtc
+              ? ` on ${format(
+                  toZonedTime(new Date(bundle.rescue.originalStartUtc), timezone),
+                  "EEE MMM d",
+                )}`
+              : ""}{" "}
+            fell through
+            {bundle.rescue.outNames.length > 0
+              ? ` — ${bundle.rescue.outNames.join(", ")} can't make it`
+              : ""}
+            . Same time, different night. Your cadence hasn't moved.
+          </p>
+        ) : (
+          <p className="mt-1 text-sm text-muted-foreground">
+            You're the {ordinal(respondedCount + (bundle.me?.responded ? 0 : 1))} of {totalCount} to
+            respond.
+          </p>
+        )}
+        {isRescue && (
+          <p className="mt-2 rounded-xl bg-accent p-3 text-sm text-accent-foreground">
+            {respondedCount} of {totalCount} answered — it locks itself the moment a night clears
+            quorum ({bundle.project.quorum_min}).
+          </p>
+        )}
         {tzLine}
 
         <div className="sticky top-0 z-10 -mx-5 mt-4 bg-background/95 px-5 py-3 backdrop-blur">
@@ -508,6 +547,21 @@ function RespondPage() {
             ))}
         </div>
 
+        {bundle.me?.canRemember && (
+          <label className="mt-8 flex min-h-11 items-start gap-3 rounded-2xl border border-border p-4 text-sm">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-5 accent-current"
+              checked={rememberUsual}
+              onChange={(e) => setRememberUsual(e.target.checked)}
+            />
+            <span>
+              Remember this as my usual — we'll pre-fill future{" "}
+              {campaign ? "session" : "plan"} answers for you. You can change it any time.
+            </span>
+          </label>
+        )}
+
         <div className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-md border-t border-border bg-background px-5 pb-6 pt-4">
           <Button
             className="h-14 w-full text-base font-bold"
@@ -531,9 +585,17 @@ function RespondPage() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-10 pt-14">
       <h1 className="text-3xl font-black tracking-tight">Thanks, {name.trim() || "friend"}.</h1>
-      <p className="mt-2 text-base text-muted-foreground">
-        We'll let you know when it's locked in.
-      </p>
+      {autoLocked ? (
+        <p className="mt-2 rounded-2xl bg-accent p-4 text-base text-accent-foreground">
+          That did it — locked for{" "}
+          <strong>{format(toZonedTime(new Date(autoLocked), timezone), "EEE MMM d, h:mm a")}</strong>
+          . Everyone's been told. Just this session; the cadence hasn't moved.
+        </p>
+      ) : (
+        <p className="mt-2 text-base text-muted-foreground">
+          We'll let you know when it's locked in.
+        </p>
+      )}
 
       <div className="mt-8 rounded-2xl border border-border p-4">
         <p className="text-sm font-bold">

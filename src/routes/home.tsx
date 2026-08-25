@@ -9,8 +9,11 @@ import { AlertTriangle, Copy } from "lucide-react";
 import { useMemo } from "react";
 import { toast } from "sonner";
 
+import { AvailabilityRefreshCard } from "@/components/AvailabilityRefreshCard";
 import { D20Icon } from "@/components/D20Icon";
 import { Button } from "@/components/ui/button";
+import { DRIFT_ALARM_DAYS } from "@/lib/anti-drift.shared";
+import { setCampaignPaused } from "@/lib/groups.functions";
 import { campaignHealth, healthLabel } from "@/lib/campaign";
 import { copy } from "@/lib/mode";
 import {
@@ -20,7 +23,7 @@ import {
 } from "@/lib/occurrences.functions";
 import { listNames } from "@/lib/solver";
 
-type OccurrenceAction = "repoll" | "go_ahead" | "cancel" | "played";
+type OccurrenceAction = "repoll" | "go_ahead" | "cancel" | "played" | "acknowledge";
 
 export const Route = createFileRoute("/home")({
   head: () => ({
@@ -78,6 +81,7 @@ function HomePage() {
   const qc = useQueryClient();
   const fetchOccurrences = useServerFn(getOrganizerOccurrences);
   const actFn = useServerFn(actOnOccurrence);
+  const pauseFn = useServerFn(setCampaignPaused);
 
   const query = useQuery({
     queryKey: ["organizer-occurrences"],
@@ -86,17 +90,46 @@ function HomePage() {
 
   const act = useMutation({
     mutationFn: (vars: { occurrenceId: string; action: OccurrenceAction }) =>
-      actFn({ data: vars }),
+      actFn({
+        data: {
+          ...vars,
+          origin: typeof window === "undefined" ? null : window.location.origin,
+        },
+      }),
     onSuccess: (res, vars) => {
       if (vars.action === "repoll" && res.repollSlug) {
         toast.success("Rescue poll started — send the link round.");
       } else if (vars.action === "cancel") {
-        toast.success("Session cancelled");
+        // Never empty: skipping a night always shows what replaces it.
+        toast.success(
+          res.nextStartUtc
+            ? `Skipped. Next up: ${format(toZonedTime(new Date(res.nextStartUtc), tz), "EEE MMM d")}.`
+            : "Session cancelled",
+        );
       } else if (vars.action === "played") {
-        toast.success("Logged. Nice one.");
+        toast.success(
+          res.nextStartUtc
+            ? `Logged. Next up: ${format(toZonedTime(new Date(res.nextStartUtc), tz), "EEE MMM d")}.`
+            : "Logged. Nice one.",
+        );
+      } else if (vars.action === "acknowledge") {
+        toast.success("Got it — banner cleared.");
       } else {
         toast.success("Going ahead anyway");
       }
+      qc.invalidateQueries({ queryKey: ["organizer-occurrences"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const pause = useMutation({
+    mutationFn: (vars: { groupId: string; paused: boolean }) => pauseFn({ data: vars }),
+    onSuccess: (res) => {
+      toast.success(
+        res.paused
+          ? "Paused. We'll stop nudging until you're back."
+          : "Welcome back — the campaign is live again.",
+      );
       qc.invalidateQueries({ queryKey: ["organizer-occurrences"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -159,8 +192,70 @@ function HomePage() {
 
   const campaign = next?.appMode === "campaign";
 
+  const drifting =
+    campaign &&
+    !next?.groupPaused &&
+    next?.daysSinceLastPlayed != null &&
+    next.daysSinceLastPlayed >= DRIFT_ALARM_DAYS;
+
   return (
     <Shell>
+      <AvailabilityRefreshCard />
+
+      {next?.groupPaused && next.groupId && (
+        <div className="mb-4 rounded-2xl border border-border bg-muted/40 p-4">
+          <p className="text-sm font-bold">This campaign is paused.</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            No nudges, no drift alarms. Nothing's lost — pick it back up whenever.
+          </p>
+          <Button
+            variant="secondary"
+            className="mt-3 h-11 w-full"
+            disabled={pause.isPending}
+            onClick={() => pause.mutate({ groupId: next.groupId!, paused: false })}
+          >
+            We're back
+          </Button>
+        </div>
+      )}
+
+      {drifting && next && (
+        <div className="campaign-scope mb-4 rounded-2xl border border-destructive/40 bg-destructive/10 p-4">
+          <p className="text-sm font-bold">
+            {next.daysSinceLastPlayed} days since you last played.
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            No judgement — campaigns drift. Three honest options:
+          </p>
+          <div className="mt-3 space-y-2">
+            <Link
+              to="/session-zero"
+              className="flex h-11 w-full items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground"
+            >
+              Pick a new cadence
+            </Link>
+            <Button
+              variant="secondary"
+              className="h-11 w-full"
+              disabled={act.isPending}
+              onClick={() => act.mutate({ occurrenceId: next.id, action: "repoll" })}
+            >
+              Rescue one night
+            </Button>
+            {next.groupId && (
+              <Button
+                variant="ghost"
+                className="h-11 w-full"
+                disabled={pause.isPending}
+                onClick={() => pause.mutate({ groupId: next.groupId!, paused: true })}
+              >
+                Pause the campaign
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
       {unlogged.map((occ) => (
         <div
           key={occ.id}
@@ -262,6 +357,18 @@ function OccurrenceCard({
   const campaign = occ.appMode === "campaign";
   const c = copy(campaign ? "campaign" : "plans");
 
+  function copyAnnouncement() {
+    const link = `${window.location.origin}/o/${occ.id}`;
+    const name = occ.sessionNumber ? `Session ${occ.sessionNumber}` : occ.project_name;
+    const text = `${name} moved to ${when}. In: ${
+      occ.inNames.length > 0 ? listNames(occ.inNames) : "nobody yet"
+    }${occ.outNames.length > 0 ? ` · Out: ${listNames(occ.outNames)}` : ""}. ${link}`;
+    navigator.clipboard
+      .writeText(text)
+      .then(() => toast.success("Announcement copied — paste it in the group chat"))
+      .catch(() => toast.error("Couldn't copy"));
+  }
+
   function copyConfirmLink() {
     const link = `${window.location.origin}/o/${occ.id}`;
     const text = `${occ.project_name} — ${when}. You in? Takes 10 seconds: ${link}`;
@@ -295,9 +402,27 @@ function OccurrenceCard({
       </div>
 
       {occ.movedAt && occ.status === "confirmed" && (
-        <p className="mt-3 rounded-xl border border-primary/40 bg-primary/10 p-3 text-sm font-semibold">
-          This session moved — the rescue poll found a time that works.
-        </p>
+        <div className="mt-3 rounded-xl border border-primary/40 bg-primary/10 p-3">
+          <p className="text-sm font-semibold">
+            This session moved — the rescue poll found a time that works.
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Just this one. Your locked cadence hasn't moved.
+          </p>
+          <div className="mt-3 flex gap-2">
+            <Button variant="secondary" className="h-11 flex-1" onClick={copyAnnouncement}>
+              <Copy className="mr-2 h-4 w-4" /> Copy announcement
+            </Button>
+            <Button
+              variant="ghost"
+              className="h-11 flex-1"
+              disabled={pending}
+              onClick={() => onAct("acknowledge")}
+            >
+              Got it
+            </Button>
+          </div>
+        </div>
       )}
 
       {atRisk && (

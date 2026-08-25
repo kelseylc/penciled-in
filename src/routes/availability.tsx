@@ -75,6 +75,8 @@ function AvailabilityPage() {
   const save = useServerFn(saveMyAvailability);
 
   const [pattern, setPattern] = useState<WeeklyPattern>({});
+  const [blackouts, setBlackouts] = useState<string[]>([]);
+  const [newBlackout, setNewBlackout] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [editing, setEditing] = useState<Editing | null>(null);
   const [rangeError, setRangeError] = useState<string | null>(null);
@@ -87,14 +89,16 @@ function AvailabilityPage() {
   useEffect(() => {
     if (!query.data || loaded) return;
     setPattern(query.data.weekly_pattern);
+    setBlackouts(query.data.blackout_dates);
     setLoaded(true);
   }, [query.data, loaded]);
 
   const saveMutation = useMutation({
-    mutationFn: () => save({ data: { weekly_pattern: pattern } }),
+    mutationFn: () => save({ data: { weekly_pattern: pattern, blackout_dates: blackouts } }),
     onSuccess: (result) => {
       qc.setQueryData(["my-availability"], result);
       setPattern(result.weekly_pattern);
+      setBlackouts(result.blackout_dates);
       toast.success("Got it. We'll use this to save you some taps.");
       navigate({ to: "/home" });
     },
@@ -274,6 +278,53 @@ function AvailabilityPage() {
           })}
         </div>
       )}
+
+      <section className="mt-6 rounded-2xl border border-border bg-card p-4">
+        <h2 className="text-sm font-bold">Any dates you're away?</h2>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Holidays, work trips, weddings. We'll answer "no" for those days automatically.
+        </p>
+        {blackouts.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {blackouts.map((date) => (
+              <span
+                key={date}
+                className="flex items-center gap-1 rounded-full border border-border bg-secondary py-1 pl-3 pr-1 text-sm font-bold"
+              >
+                {date}
+                <button
+                  type="button"
+                  aria-label={`Remove ${date}`}
+                  onClick={() => setBlackouts((c) => c.filter((d) => d !== date))}
+                  className="grid size-8 place-items-center rounded-full text-muted-foreground"
+                >
+                  <X className="size-4" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <div className="mt-3 flex gap-2">
+          <Input
+            type="date"
+            className="h-11"
+            value={newBlackout}
+            onChange={(e) => setNewBlackout(e.target.value)}
+            aria-label="Add a date you're away"
+          />
+          <Button
+            variant="secondary"
+            className="h-11"
+            disabled={!newBlackout}
+            onClick={() => {
+              setBlackouts((c) => (c.includes(newBlackout) ? c : [...c, newBlackout].sort()));
+              setNewBlackout("");
+            }}
+          >
+            Add
+          </Button>
+        </div>
+      </section>
 
       <div className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-md border-t border-border bg-background px-5 pb-6 pt-4">
         <Button

@@ -23,7 +23,17 @@ export interface RespondBundle {
     response_deadline: string | null;
     status: string;
     mode: string;
+    /** Campaign polls get the rescue chrome and the default-on "usual" save. */
+    app_mode: string;
+    is_rescue: boolean;
   };
+  /** Set on a rescue poll: what fell through, and who's already answered. */
+  rescue: {
+    sessionLabel: string;
+    originalStartUtc: string | null;
+    /** People whose "out" started this. */
+    outNames: string[];
+  } | null;
   slots: { id: string; start_utc: string; end_utc: string }[];
   participants: {
     id: string;
@@ -36,6 +46,8 @@ export interface RespondBundle {
     display_name: string;
     timezone: string | null;
     responded: boolean;
+    /** Only signed-in players can save a usual schedule. */
+    canRemember: boolean;
     responses: { candidate_slot_id: string; state: "yes" | "maybe" | "no" }[];
     defaults: {
       weekly_pattern: WeeklyPattern;
@@ -45,6 +57,7 @@ export interface RespondBundle {
   } | null;
 
 }
+
 
 export const getRespondBundle = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) =>
@@ -56,12 +69,47 @@ export const getRespondBundle = createServerFn({ method: "POST" })
     const { data: project } = await supabaseAdmin
       .from("projects")
       .select(
-        "id, name, slug, template, duration_minutes, quorum_min, response_deadline, status, mode, group_id",
+        "id, name, slug, template, duration_minutes, quorum_min, response_deadline, status, mode, group_id, app_mode, is_rescue, repoll_for_occurrence_id",
       )
       .eq("slug", data.slug)
       .maybeSingle();
 
     if (!project) throw new Error("This plan link isn't valid anymore.");
+
+    // A rescue poll has to say what it's rescuing, or the five chips look like
+    // a brand new plan and people answer them like one.
+    let rescue: RespondBundle["rescue"] = null;
+    if (project.is_rescue && project.repoll_for_occurrence_id) {
+      const { data: occ } = await supabaseAdmin
+        .from("occurrences")
+        .select("id, project_id, scheduled_start_utc, session_number")
+        .eq("id", project.repoll_for_occurrence_id)
+        .maybeSingle();
+      if (occ) {
+        const { data: outs } = await supabaseAdmin
+          .from("occurrence_rsvps")
+          .select("participant_id, state")
+          .eq("occurrence_id", occ.id)
+          .eq("state", "out");
+        const outIds = (outs ?? []).map((r) => r.participant_id);
+        let outNames: string[] = [];
+        if (outIds.length > 0) {
+          const { data: people } = await supabaseAdmin
+            .from("participants")
+            .select("display_name")
+            .in("id", outIds);
+          outNames = (people ?? []).map((p) => p.display_name);
+        }
+        rescue = {
+          sessionLabel: occ.session_number
+            ? `Session ${occ.session_number}`
+            : project.name.replace(/^Rescue: /, ""),
+          originalStartUtc: occ.scheduled_start_utc,
+          outNames,
+        };
+      }
+    }
+
 
     const [{ data: slots }, { data: participants }] = await Promise.all([
       supabaseAdmin
@@ -143,6 +191,7 @@ export const getRespondBundle = createServerFn({ method: "POST" })
           display_name: participant.display_name,
           timezone: participant.timezone,
           responded: !!participant.responded_at,
+          canRemember: !!participant.profile_id,
           responses: (responses ?? []).map((r) => ({
             candidate_slot_id: r.candidate_slot_id,
             state: r.state as "yes" | "maybe" | "no",
@@ -163,7 +212,10 @@ export const getRespondBundle = createServerFn({ method: "POST" })
         response_deadline: project.response_deadline,
         status: project.status,
         mode: project.mode,
+        app_mode: project.app_mode,
+        is_rescue: project.is_rescue,
       },
+      rescue,
       slots: slots ?? [],
       participants: (participants ?? []).map((p) => ({
         id: p.id,
@@ -174,6 +226,7 @@ export const getRespondBundle = createServerFn({ method: "POST" })
       me,
     };
   });
+
 
 /** Claim an existing unclaimed participant by name, or add a new guest. */
 export const joinProject = createServerFn({ method: "POST" })
@@ -251,6 +304,9 @@ export const submitResponses = createServerFn({ method: "POST" })
         responses: z
           .array(z.object({ candidate_slot_id: z.string().uuid(), state: stateSchema }))
           .max(200),
+        /** "Remember this as my usual" — default-on in campaign mode. */
+        rememberUsual: z.boolean().optional(),
+        origin: z.string().url().optional(),
       })
       .parse(data),
   )
@@ -266,7 +322,7 @@ export const submitResponses = createServerFn({ method: "POST" })
 
     const { data: participant } = await supabaseAdmin
       .from("participants")
-      .select("id")
+      .select("id, profile_id")
       .eq("project_id", project.id)
       .eq("token", data.token)
       .maybeSingle();
@@ -274,7 +330,7 @@ export const submitResponses = createServerFn({ method: "POST" })
 
     const { data: slots } = await supabaseAdmin
       .from("candidate_slots")
-      .select("id")
+      .select("id, start_utc, end_utc")
       .eq("project_id", project.id);
     const valid = new Set((slots ?? []).map((s) => s.id));
     const rows = data.responses
@@ -296,9 +352,41 @@ export const submitResponses = createServerFn({ method: "POST" })
       .update({ responded_at: new Date().toISOString(), timezone: data.timezone })
       .eq("id", participant.id);
 
+    // The cheapest moment to learn someone's usual week is the moment they
+    // just described it slot by slot.
+    let remembered = false;
+    if (data.rememberUsual && participant.profile_id) {
+      const { rememberUsualFromAnswers } = await import("@/lib/remember-usual.server");
+      remembered = await rememberUsualFromAnswers(
+        participant.profile_id,
+        (slots ?? []).map((s) => ({ id: s.id, start_utc: s.start_utc, end_utc: s.end_utc })),
+        data.responses,
+        data.timezone,
+      );
+    }
+
     // A rescue poll locks itself the instant a time clears the table's bar.
     const { maybeAutoLockRescue } = await import("@/lib/rescue.server");
     const autoLock = await maybeAutoLockRescue(project.id);
 
-    return { ok: true, saved: rows.length, autoLocked: autoLock.locked, lockedStart: autoLock.startUtc ?? null };
+    // Auto-lock only earns its keep if the table hears about it immediately.
+    let announcement: string | null = null;
+    if (autoLock.locked && autoLock.occurrenceId) {
+      const { announceMovedOccurrence } = await import("@/lib/announce.server");
+      const result = await announceMovedOccurrence(
+        autoLock.occurrenceId,
+        data.origin ?? "https://penciled-in.lovable.app",
+      );
+      announcement = result?.text ?? null;
+    }
+
+    return {
+      ok: true,
+      saved: rows.length,
+      autoLocked: autoLock.locked,
+      lockedStart: autoLock.startUtc ?? null,
+      announcement,
+      remembered,
+    };
+
   });

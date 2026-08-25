@@ -67,6 +67,14 @@ export async function loadOrganizerOccurrences(
   // "Days since we last played" is per campaign, so it is resolved once per
   // group rather than once per session.
   const groupIds = [...new Set((projects ?? []).map((p) => p.group_id).filter(Boolean))] as string[];
+  const groupById = new Map<string, { slug: string; paused: boolean }>();
+  if (groupIds.length > 0) {
+    const { data: groups } = await sb
+      .from("groups")
+      .select("id, slug, paused_at")
+      .in("id", groupIds);
+    for (const g of groups ?? []) groupById.set(g.id, { slug: g.slug, paused: !!g.paused_at });
+  }
   const gapByGroup = new Map<string, number | null>();
   await Promise.all(
     groupIds.map(async (id) => gapByGroup.set(id, await daysSinceLastPlayed(id))),
@@ -113,6 +121,8 @@ export async function loadOrganizerOccurrences(
       playedAt: occ.played_at,
       movedAt: occ.moved_at,
       groupId: project.group_id,
+      groupSlug: project.group_id ? (groupById.get(project.group_id)?.slug ?? null) : null,
+      groupPaused: project.group_id ? (groupById.get(project.group_id)?.paused ?? false) : false,
       daysSinceLastPlayed: project.group_id ? (gapByGroup.get(project.group_id) ?? null) : null,
     };
   });
@@ -122,7 +132,8 @@ export async function runOccurrenceAction(
   sb: SB,
   userId: string,
   occurrenceId: string,
-  action: "repoll" | "go_ahead" | "cancel" | "played",
+  action: "repoll" | "go_ahead" | "cancel" | "played" | "acknowledge",
+  origin?: string | null,
 ) {
   // RLS check: the caller must be able to see this occurrence.
   const { data: occ } = await sb
@@ -132,18 +143,32 @@ export async function runOccurrenceAction(
     .maybeSingle();
   if (!occ) throw new Error("You can't manage that session.");
 
+  const { ensureNextOccurrence } = await import("@/lib/anti-drift.server");
+
   if (action === "repoll") {
     // Campaigns get the five-chip rescue poll; everything else keeps the
     // full ±7 day re-poll grid.
     const rescue = await ensureRescueProject(occurrenceId);
-    if (rescue) return { ok: true, repollSlug: rescue.slug };
+    if (rescue) return { ok: true, repollSlug: rescue.slug, nextStartUtc: null };
     const { slug } = await createRepollProject(occurrenceId, userId);
-    return { ok: true, repollSlug: slug };
+    return { ok: true, repollSlug: slug, nextStartUtc: null };
+  }
+
+  if (action === "acknowledge") {
+    // "Got it" clears the moved-session banner for the whole table.
+    const { error } = await sb
+      .from("occurrences")
+      .update({ moved_at: null })
+      .eq("id", occurrenceId);
+    if (error) throw new Error(error.message);
+    return { ok: true, repollSlug: null, nextStartUtc: null };
   }
 
   if (action === "played") {
     await markSessionPlayed(occurrenceId);
-    return { ok: true, repollSlug: null };
+    // Never empty: logging a session immediately mints the next one.
+    const next = await ensureNextOccurrence(occ.project_id);
+    return { ok: true, repollSlug: null, nextStartUtc: next?.scheduled_start_utc ?? null };
   }
 
   if (action === "cancel") {
@@ -152,7 +177,9 @@ export async function runOccurrenceAction(
       .update({ status: "cancelled" })
       .eq("id", occurrenceId);
     if (error) throw new Error(error.message);
-    return { ok: true, repollSlug: null };
+    // Skipping one night must never leave the calendar blank.
+    const next = await ensureNextOccurrence(occ.project_id);
+    return { ok: true, repollSlug: null, nextStartUtc: next?.scheduled_start_utc ?? null };
   }
 
   const { error } = await sb
@@ -160,5 +187,7 @@ export async function runOccurrenceAction(
     .update({ status: "confirmed" })
     .eq("id", occurrenceId);
   if (error) throw new Error(error.message);
-  return { ok: true, repollSlug: null };
+  void origin;
+  return { ok: true, repollSlug: null, nextStartUtc: null };
 }
+

@@ -385,3 +385,21 @@ export const setCoOrganizer = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true, linked: true as const };
   });
+
+/**
+ * Pause a campaign. Hiatus is a legitimate state — an app that can't be told
+ * "we're not playing right now" just becomes another thing to mute.
+ */
+export const setCampaignPaused = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({ groupId: z.string().uuid(), paused: z.boolean() }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("groups")
+      .update({ paused_at: data.paused ? new Date().toISOString() : null })
+      .eq("id", data.groupId);
+    if (error) throw new Error("Only the campaign owner can pause it.");
+    return { ok: true, paused: data.paused };
+  });
