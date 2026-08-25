@@ -100,7 +100,14 @@ function TickSlider({
         {ticks.map((tick) => (
           <div
             key={tick}
-            className="absolute top-0 flex -translate-x-1/2 flex-col items-center"
+            className={cn(
+              "absolute top-0 flex flex-col",
+              tick === min
+                ? "items-start"
+                : tick === max
+                  ? "-translate-x-full items-end"
+                  : "-translate-x-1/2 items-center",
+            )}
             style={{ left: `${((tick - min) / (max - min)) * 100}%` }}
           >
             <span className="h-1.5 w-px bg-border" />
@@ -109,6 +116,7 @@ function TickSlider({
             </span>
           </div>
         ))}
+
       </div>
     </div>
   );
