@@ -138,6 +138,7 @@ export type Database = {
           id: string
           is_required_default: boolean
           profile_id: string | null
+          role: string
           timezone: string | null
         }
         Insert: {
@@ -147,6 +148,7 @@ export type Database = {
           id?: string
           is_required_default?: boolean
           profile_id?: string | null
+          role?: string
           timezone?: string | null
         }
         Update: {
@@ -156,6 +158,7 @@ export type Database = {
           id?: string
           is_required_default?: boolean
           profile_id?: string | null
+          role?: string
           timezone?: string | null
         }
         Relationships: [
@@ -177,25 +180,46 @@ export type Database = {
       }
       groups: {
         Row: {
+          auto_lock_rescue: boolean
+          campaign_name: string | null
           created_at: string
           id: string
+          mode: string
           name: string
           owner_id: string | null
+          session_counter: number
           slug: string
+          table_rule: string | null
+          venue: string | null
+          vtt_link: string | null
         }
         Insert: {
+          auto_lock_rescue?: boolean
+          campaign_name?: string | null
           created_at?: string
           id?: string
+          mode?: string
           name: string
           owner_id?: string | null
+          session_counter?: number
           slug: string
+          table_rule?: string | null
+          venue?: string | null
+          vtt_link?: string | null
         }
         Update: {
+          auto_lock_rescue?: boolean
+          campaign_name?: string | null
           created_at?: string
           id?: string
+          mode?: string
           name?: string
           owner_id?: string | null
+          session_counter?: number
           slug?: string
+          table_rule?: string | null
+          venue?: string | null
+          vtt_link?: string | null
         }
         Relationships: [
           {
@@ -253,31 +277,50 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          moved_at: string | null
+          played_at: string | null
           project_id: string
+          rescue_project_id: string | null
           scheduled_end_utc: string
           scheduled_start_utc: string
+          session_number: number | null
           status: string
         }
         Insert: {
           created_at?: string
           id?: string
+          moved_at?: string | null
+          played_at?: string | null
           project_id: string
+          rescue_project_id?: string | null
           scheduled_end_utc: string
           scheduled_start_utc: string
+          session_number?: number | null
           status?: string
         }
         Update: {
           created_at?: string
           id?: string
+          moved_at?: string | null
+          played_at?: string | null
           project_id?: string
+          rescue_project_id?: string | null
           scheduled_end_utc?: string
           scheduled_start_utc?: string
+          session_number?: number | null
           status?: string
         }
         Relationships: [
           {
             foreignKeyName: "occurrences_project_id_fkey"
             columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "occurrences_rescue_project_id_fkey"
+            columns: ["rescue_project_id"]
             isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
@@ -289,9 +332,11 @@ export type Database = {
           display_name: string
           id: string
           is_required: boolean
+          last_seen_change_at: string | null
           profile_id: string | null
           project_id: string
           responded_at: string | null
+          role: string
           timezone: string | null
           token: string
         }
@@ -299,9 +344,11 @@ export type Database = {
           display_name: string
           id?: string
           is_required?: boolean
+          last_seen_change_at?: string | null
           profile_id?: string | null
           project_id: string
           responded_at?: string | null
+          role?: string
           timezone?: string | null
           token?: string
         }
@@ -309,9 +356,11 @@ export type Database = {
           display_name?: string
           id?: string
           is_required?: boolean
+          last_seen_change_at?: string | null
           profile_id?: string | null
           project_id?: string
           responded_at?: string | null
+          role?: string
           timezone?: string | null
           token?: string
         }
@@ -338,6 +387,7 @@ export type Database = {
           display_name: string | null
           email: string | null
           id: string
+          preferred_mode: string
           timezone: string | null
         }
         Insert: {
@@ -345,6 +395,7 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id: string
+          preferred_mode?: string
           timezone?: string | null
         }
         Update: {
@@ -352,17 +403,20 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id?: string
+          preferred_mode?: string
           timezone?: string | null
         }
         Relationships: []
       }
       projects: {
         Row: {
+          app_mode: string
           cadence: string | null
           created_at: string
           duration_minutes: number
           group_id: string | null
           id: string
+          is_rescue: boolean
           mode: string
           name: string
           organizer_id: string | null
@@ -378,11 +432,13 @@ export type Database = {
           window_start: string
         }
         Insert: {
+          app_mode?: string
           cadence?: string | null
           created_at?: string
           duration_minutes?: number
           group_id?: string | null
           id?: string
+          is_rescue?: boolean
           mode?: string
           name: string
           organizer_id?: string | null
@@ -398,11 +454,13 @@ export type Database = {
           window_start?: string
         }
         Update: {
+          app_mode?: string
           cadence?: string | null
           created_at?: string
           duration_minutes?: number
           group_id?: string | null
           id?: string
+          is_rescue?: boolean
           mode?: string
           name?: string
           organizer_id?: string | null

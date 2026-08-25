@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { format } from "date-fns";
@@ -64,6 +64,7 @@ function OccurrencePage() {
   const [claimedName, setClaimedName] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [submitted, setSubmitted] = useState<State | null>(null);
+  const [rescueSlug, setRescueSlug] = useState<string | null>(null);
 
   const fetchBundle = useServerFn(getOccurrenceGuest);
   const rsvpFn = useServerFn(submitOccurrenceRsvp);
@@ -101,6 +102,7 @@ function OccurrencePage() {
         setToken(res.token);
         writeGuestToken(data.project.slug, res.token);
       }
+      setRescueSlug(res.rescueSlug ?? null);
       setSubmitted(state);
       query.refetch();
     },
@@ -142,6 +144,22 @@ function OccurrencePage() {
             {data.tally.attending} of {data.tally.total} confirmed
             {data.tally.noResponse > 0 ? ` · ${data.tally.noResponse} still to answer` : ""}.
           </p>
+          {rescueSlug && (
+            <div className="mt-5 rounded-2xl border border-primary/40 bg-primary/10 p-4">
+              <p className="text-sm font-bold">This one&apos;s short a few people.</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                There&apos;s a quick poll for a replacement night. Five options, one tap each — the
+                regular slot stays where it is.
+              </p>
+              <Link
+                to="/p/$slug"
+                params={{ slug: rescueSlug }}
+                className="mt-3 flex h-12 w-full items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground"
+              >
+                Pick a rescue night
+              </Link>
+            </div>
+          )}
           <Button
             variant="secondary"
             className="mt-6 h-12"

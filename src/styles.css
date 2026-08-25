@@ -59,6 +59,9 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-campaign: var(--campaign);
+  --color-campaign-foreground: var(--campaign-foreground);
+  --color-campaign-muted: var(--campaign-muted);
 }
 
 :root {
@@ -95,6 +98,10 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+  /* Campaign mode accent: crimson, from the d20. */
+  --campaign: oklch(0.47 0.2 26);
+  --campaign-foreground: oklch(0.99 0.01 85);
+  --campaign-muted: oklch(0.95 0.03 25);
 }
 
 .dark {
@@ -130,6 +137,19 @@
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.551 0.027 264.364);
+  --campaign: oklch(0.62 0.21 26);
+  --campaign-foreground: oklch(0.99 0.01 85);
+  --campaign-muted: oklch(0.28 0.08 25);
+}
+
+/*
+ * Campaign surfaces re-point the shared accent tokens at crimson, so every
+ * button, ring and chip inside them picks the mode up without conditionals.
+ */
+.campaign-scope {
+  --primary: var(--campaign);
+  --primary-foreground: var(--campaign-foreground);
+  --ring: var(--campaign);
 }
 
 @layer base {
