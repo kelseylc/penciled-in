@@ -56,10 +56,6 @@ function Index() {
       }`}
     >
       <AppBar back={false} />
-      <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
-        Party.up
-      </p>
-
       <ModeToggle mode={mode} onChange={setMode} className="mt-4" />
 
       <h1 className="mt-5 text-4xl font-black leading-[1.05] tracking-tight">{c.homeHeader}</h1>
