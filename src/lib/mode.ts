@@ -20,7 +20,7 @@ export function isAppMode(value: unknown): value is AppMode {
   return value === "campaign" || value === "plans";
 }
 
-export function asAppMode(value: unknown, fallback: AppMode = "plans"): AppMode {
+export function asAppMode(value: unknown, fallback: AppMode = "campaign"): AppMode {
   return isAppMode(value) ? value : fallback;
 }
 
@@ -77,7 +77,7 @@ const CAMPAIGN: ModeCopy = {
 
 const PLANS: ModeCopy = {
   mode: "plans",
-  modeLabel: "Plans",
+  modeLabel: "Events",
   container: "Group",
   containerPlural: "Groups",
   event: "Plan",
