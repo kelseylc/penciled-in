@@ -314,8 +314,8 @@ function SessionZero() {
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
-              {(["weekly", "biweekly", "monthly"] as Cadence[]).map((option) => (
+            <div className="grid grid-cols-2 gap-2">
+              {(["weekly", "biweekly", "monthly", "adhoc"] as Cadence[]).map((option) => (
                 <button
                   key={option}
                   type="button"
@@ -332,6 +332,14 @@ function SessionZero() {
                 </button>
               ))}
             </div>
+
+            {cadence === "adhoc" && (
+              <p className="rounded-2xl bg-muted p-3 text-xs text-muted-foreground">
+                One session only — no repeating cadence. You'll still pick times and lock a
+                date with the party.
+              </p>
+            )}
+
 
             <div>
               <Label className="text-sm font-semibold">Which days could work?</Label>
