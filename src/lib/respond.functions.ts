@@ -23,7 +23,17 @@ export interface RespondBundle {
     response_deadline: string | null;
     status: string;
     mode: string;
+    /** Campaign polls get the rescue chrome and the default-on "usual" save. */
+    app_mode: string;
+    is_rescue: boolean;
   };
+  /** Set on a rescue poll: what fell through, and who's already answered. */
+  rescue: {
+    sessionLabel: string;
+    originalStartUtc: string | null;
+    /** People whose "out" started this. */
+    outNames: string[];
+  } | null;
   slots: { id: string; start_utc: string; end_utc: string }[];
   participants: {
     id: string;
@@ -36,6 +46,8 @@ export interface RespondBundle {
     display_name: string;
     timezone: string | null;
     responded: boolean;
+    /** Only signed-in players can save a usual schedule. */
+    canRemember: boolean;
     responses: { candidate_slot_id: string; state: "yes" | "maybe" | "no" }[];
     defaults: {
       weekly_pattern: WeeklyPattern;
@@ -45,6 +57,7 @@ export interface RespondBundle {
   } | null;
 
 }
+
 
 export const getRespondBundle = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) =>
