@@ -52,7 +52,7 @@ function Index() {
   return (
     <main
       className={`mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-10 pt-2 ${
-        campaign ? "campaign-scope" : ""
+        campaign ? "campaign-scope" : "plans-scope"
       }`}
     >
       <AppBar back={false} />
