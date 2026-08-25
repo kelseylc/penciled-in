@@ -10,13 +10,13 @@ import { copy } from "@/lib/mode";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Penciled.in — keep your campaign on the calendar" },
+      { title: "Party.up — keep your campaign on the calendar" },
       {
         name: "description",
         content:
           "Lock a cadence, agree on a quorum, and rescue a session the moment it falls apart. Built for D&D groups, works for any plan.",
       },
-      { property: "og:title", content: "Penciled.in — Adulting is hard, scheduling shouldn't be." },
+      { property: "og:title", content: "Party.up — Adulting is hard, scheduling shouldn't be." },
       {
         property: "og:description",
         content:
@@ -57,7 +57,7 @@ function Index() {
     >
       <AppBar back={false} />
       <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
-        Penciled.in
+        Party.up
       </p>
 
       <ModeToggle mode={mode} onChange={setMode} className="mt-4" />

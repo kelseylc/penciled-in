@@ -11,12 +11,12 @@ import { useAuth } from "@/hooks/useAuth";
 export const Route = createFileRoute("/share/$slug")({
   head: () => ({
     meta: [
-      { title: "Share your plan — Penciled.in" },
+      { title: "Share your plan — Party.up" },
       {
         name: "description",
         content: "Copy the one link your group needs. No signup required to respond.",
       },
-      { property: "og:title", content: "Share your plan — Penciled.in" },
+      { property: "og:title", content: "Share your plan — Party.up" },
       {
         property: "og:description",
         content: "One short link, one copy button, one chat-ready message.",

@@ -30,19 +30,19 @@ export const Route = createFileRoute("/p/$slug")({
   validateSearch: z.object({ t: z.string().optional() }),
   head: () => ({
     meta: [
-      { title: "Respond to a plan — Penciled.in" },
+      { title: "Respond to a plan — Party.up" },
       {
         name: "description",
         content: "Tap your availability. Takes about 30 seconds and never asks you to sign up.",
       },
-      { property: "og:title", content: "Can you make it? — Penciled.in" },
+      { property: "og:title", content: "Can you make it? — Party.up" },
       {
         property: "og:description",
         content: "Tap the times that work. Takes 30 seconds — no signup.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Can you make it? — Penciled.in" },
+      { name: "twitter:title", content: "Can you make it? — Party.up" },
       {
         name: "twitter:description",
         content: "Tap the times that work. Takes 30 seconds — no signup.",

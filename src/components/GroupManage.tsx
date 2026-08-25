@@ -198,7 +198,7 @@ export function GroupManage({ slug }: { slug: string }) {
                   onChange={(e) => setCoEmail(e.target.value)}
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
-                  The email on their Penciled.in account. Co-organizers can start and lock plans for
+                  The email on their Party.up account. Co-organizers can start and lock plans for
                   this group.
                 </p>
                 <div className="mt-2 grid grid-cols-2 gap-2">

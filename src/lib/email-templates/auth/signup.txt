@@ -1,9 +1,9 @@
 Confirm your email
 
-Open this link to activate your Penciled.in account. It expires in 24 hours.
+Open this link to activate your Party.up account. It expires in 24 hours.
 
 {{ .ConfirmationURL }}
 
 Didn't sign up? You can ignore this email.
 
--- Penciled.in
+-- Party.up

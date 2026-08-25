@@ -17,7 +17,7 @@ export async function sendEmail(
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: "Penciled.in <onboarding@resend.dev>",
+        from: "Party.up <onboarding@resend.dev>",
         to: [to],
         subject,
         text,
@@ -61,7 +61,7 @@ export function emailShell(headline: string, body: string, cta?: { label: string
   <p style="margin:0 0 8px;font-size:18px;font-weight:600;color:#2B2622;">${headline}</p>
   <div style="margin:0 0 24px;font-size:15px;line-height:22px;color:#5C5349;">${body}</div>
   ${button}
-  <p style="margin:0;font-size:13px;line-height:20px;color:#8A8079;">— Penciled.in</p>
+  <p style="margin:0;font-size:13px;line-height:20px;color:#8A8079;">— Party.up</p>
 </td></tr>
 </table>
 </td></tr>

@@ -14,13 +14,13 @@ import { getGroupPage, type GroupPage } from "@/lib/groups.functions";
 export const Route = createFileRoute("/g/$slug")({
   head: () => ({
     meta: [
-      { title: "Your group — Penciled.in" },
+      { title: "Your group — Party.up" },
       {
         name: "description",
         content:
           "One permanent link for your group: every plan, every upcoming session, no signup to reply.",
       },
-      { property: "og:title", content: "Your group — Penciled.in" },
+      { property: "og:title", content: "Your group — Party.up" },
       {
         property: "og:description",
         content: "Every plan for this crew in one place. Takes 30 seconds — no signup.",
