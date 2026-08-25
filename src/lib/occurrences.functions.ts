@@ -49,6 +49,9 @@ export interface OrganizerOccurrence {
   /** Set when the session was moved by a rescue and nobody has acknowledged it. */
   movedAt: string | null;
   groupId: string | null;
+  groupSlug: string | null;
+  /** A paused campaign stops nudging and stops the drift alarm. */
+  groupPaused: boolean;
   daysSinceLastPlayed: number | null;
 }
 
@@ -100,11 +103,18 @@ export const actOnOccurrence = createServerFn({ method: "POST" })
     z
       .object({
         occurrenceId: z.string().uuid(),
-        action: z.enum(["repoll", "go_ahead", "cancel", "played"]),
+        action: z.enum(["repoll", "go_ahead", "cancel", "played", "acknowledge"]),
+        origin: z.string().url().nullable().optional(),
       })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
     const { runOccurrenceAction } = await import("@/lib/occurrences.organizer.server");
-    return runOccurrenceAction(context.supabase, context.userId, data.occurrenceId, data.action);
+    return runOccurrenceAction(
+      context.supabase,
+      context.userId,
+      data.occurrenceId,
+      data.action,
+      data.origin ?? null,
+    );
   });

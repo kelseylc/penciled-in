@@ -67,6 +67,14 @@ export async function loadOrganizerOccurrences(
   // "Days since we last played" is per campaign, so it is resolved once per
   // group rather than once per session.
   const groupIds = [...new Set((projects ?? []).map((p) => p.group_id).filter(Boolean))] as string[];
+  const groupById = new Map<string, { slug: string; paused: boolean }>();
+  if (groupIds.length > 0) {
+    const { data: groups } = await sb
+      .from("groups")
+      .select("id, slug, paused_at")
+      .in("id", groupIds);
+    for (const g of groups ?? []) groupById.set(g.id, { slug: g.slug, paused: !!g.paused_at });
+  }
   const gapByGroup = new Map<string, number | null>();
   await Promise.all(
     groupIds.map(async (id) => gapByGroup.set(id, await daysSinceLastPlayed(id))),
@@ -113,6 +121,8 @@ export async function loadOrganizerOccurrences(
       playedAt: occ.played_at,
       movedAt: occ.moved_at,
       groupId: project.group_id,
+      groupSlug: project.group_id ? (groupById.get(project.group_id)?.slug ?? null) : null,
+      groupPaused: project.group_id ? (groupById.get(project.group_id)?.paused ?? false) : false,
       daysSinceLastPlayed: project.group_id ? (gapByGroup.get(project.group_id) ?? null) : null,
     };
   });
